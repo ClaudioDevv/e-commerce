@@ -15,18 +15,18 @@ Proyecto personal de e-commerce especializado en pizzería, desarrollado como un
 
 ## 📁 Estructura del proyecto
 e-commerce/
-├── backend/          # API REST con Node.js + TypeScript
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middlewares/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── app.ts
-│   │   └── server.ts
-│   ├── tests/
-│   └── package.json
-└── frontend/
+├── backend/          # API REST con Node.js + TypeScript  
+│   ├── src/  
+│   │   ├── config/  
+│   │   ├── controllers/  
+│   │   ├── middlewares/  
+│   │   ├── models/  
+│   │   ├── routes/  
+│   │   ├── app.ts  
+│   │   └── server.ts  
+│   ├── tests/  
+│   └── package.json  
+└── frontend/  
 
 ## Instalación
 ### Requisitos previos
@@ -34,16 +34,16 @@ e-commerce/
 - pnpm
 
 ### Clonar repositorio
-git clone https://github.com/ClaudioDevv/e-commerce.git
+git clone https://github.com/ClaudioDevv/e-commerce.git  
 cd e-commerce
 
 ### Instalar dependencias del backend
-cd backend
+cd backend  
 pnpm install
 
 ## Uso
 ### Ejecutar el backend en modo desarrollo
-cd backend
+cd backend  
 pnpm run dev
 
 ## Autor
