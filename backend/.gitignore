@@ -1,0 +1,40 @@
+# Dependencias
+node_modules/
+
+# Archivos compilados de TypeScript
+dist/
+build/
+*.tsbuildinfo
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de testing
+coverage/
+.nyc_output/
+
+# Caché de editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Archivos temporales
+*.tmp
+*.temp
+.cache/
+
+# Sistema operativo
+Thumbs.db
