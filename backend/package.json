@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "Backend en node junto a typescript para tener una mayor robustez",
-  "main": "index.js",
+  "main": "server.ts",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",

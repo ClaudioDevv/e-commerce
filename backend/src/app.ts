@@ -1,5 +1,8 @@
 import express from 'express'
 import { errorHandler } from './middlewares/errorHandler'
+import pizzaRoutes from './routes/pizzaRoutes'
+import userRoutes from './routes/userRoutes'
+import ingredientRoutes from './routes/ingredientRoutes'
 
 const app = express()
 
@@ -10,7 +13,9 @@ app.get('/', (req, res) => {
 })
 
 // Routes
-// app.use('/api/loquesea')
+app.use('/api/pizza', pizzaRoutes)
+app.use('/api/user', userRoutes)
+app.use('/api/ingredient', ingredientRoutes)
 
 // Global Error Handler
 app.use(errorHandler)

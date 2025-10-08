@@ -61,7 +61,7 @@ model Order {
   userId    String 
   user      User    @relation(fields: [userId], references: [id])
   total     Float
-  status    String @default("pendiente")
+  status    OrderStatus @default(pendiente)
   createdAt DateTime @default(now())
   orderItems OrderItem[]
 }
@@ -74,4 +74,11 @@ model OrderItem {
   pizza    Pizza  @relation(fields: [pizzaId], references: [id])
   quantity Int
   price    Float
+}
+
+enum OrderStatus {
+  pendiente
+  en_proceso
+  entregado
+  cancelado
 }
