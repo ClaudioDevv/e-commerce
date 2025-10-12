@@ -14,71 +14,303 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== USUARIOS ====================
+
 model User {
-  id        String @id @default(uuid())
-  email     String @unique
-  phone     String @unique
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
   name      String
   surname   String
-  city      String
-  address   String
-  password  String
-  orders    Order[]
-  createdAt DateTime @default(now())
+  phone     String    @unique
+  role      UserRole  @default(CUSTOMER)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
+  addresses Address[]
+  cartItems CartItem[]
+  orders    Order[]
+
+  @@index([email])
+  @@index([phone])
 }
 
-model Pizza {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  description String
-  basePrice   Float
-  size        String
-  ingredients PizzaIngredient[]
-  createdAt   DateTime @default(now())
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  label        String?  // "Casa", "Trabajo"
+  street       String
+  city         String
+  postalCode   String
+  province     String?
+  instructions String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  orders Order[]
+
+  @@index([userId])
+}
+
+// ==================== PRODUCTOS ====================
+
+model Product {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  category    Category
+  basePrice   Float            
+  imageUrl    String?
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  variants    ProductVariant[]
+  pizzaConfig PizzaConfig?     // Solo pizzas tienen configuración
+  cartItems   CartItem[]
   orderItems  OrderItem[]
+
+  @@index([category])
+  @@index([active])
+}
+
+enum Category {
+  PIZZA
+  BEBIDA
+  ENTRANTE
+  POSTRE
+}
+
+model ProductVariant {
+  id         String   @id @default(uuid())
+  name       String   // "Mediana", "Familiar", "1L", "33cl"
+  priceDelta Float    @default(0)  // Diferencia sobre basePrice
+  active     Boolean  @default(true)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+// ==================== PIZZAS E INGREDIENTES ====================
+
+model PizzaConfig {
+  id                 String                @id @default(uuid())
+  product            Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId          String                @unique
+  allowCustomization Boolean               @default(true)
+  baseIngredients    PizzaBaseIngredient[]  // Ingredientes por defecto
 }
 
 model Ingredient {
-  id        Int     @id @default(autoincrement())
-  name      String  @unique
-  price     Float
-  pizzas    PizzaIngredient[]
-  createdAt DateTime  @default(now())
+  id         Int                   @id @default(autoincrement())
+  name       String                @unique
+  extraPrice Float                 // Precio al añadir como extra
+  available  Boolean               @default(true)
+  category   IngredientCategory?
+  imageUrl   String?
+  createdAt  DateTime              @default(now())
+
+  pizzaBase     PizzaBaseIngredient[]
+  cartCustom    CartItemIngredient[]
+  orderCustom   OrderItemIngredient[]
+
+  @@index([available])
 }
 
-model PizzaIngredient {
-  pizzaId      Int
-  pizza        Pizza      @relation(fields: [pizzaId], references: [id])
+enum IngredientCategory {
+  QUESO
+  CARNE
+  VEGETAL
+  SALSA
+  EXTRA
+}
+
+// Ingredientes que vienen por defecto en cada pizza
+model PizzaBaseIngredient {
+  pizzaConfigId String
+  pizzaConfig   PizzaConfig @relation(fields: [pizzaConfigId], references: [id], onDelete: Cascade)
+  ingredientId  Int
+  ingredient    Ingredient  @relation(fields: [ingredientId], references: [id])
+
+  @@id([pizzaConfigId, ingredientId])
+}
+
+// ==================== CARRITO ====================
+
+model CartItem {
+  id         String     @id @default(uuid())
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantId  String?
+  quantity   Int        @default(1)
+  notes      String?    // "Sin cebolla", "Bien hecha", etc.
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  customIngredients CartItemIngredient[]  // Personalizaciones de pizza
+
+  @@index([userId])
+  @@index([productId])
+}
+
+// Ingredientes personalizados en el carrito (solo para pizzas)
+model CartItemIngredient {
+  cartItemId   String
+  cartItem     CartItem   @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
   ingredientId Int
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-  
-  @@id([pizzaId, ingredientId])
+  action       IngredientAction  // ADD = añadir extra, REMOVE = quitar base
+
+  @@id([cartItemId, ingredientId, action])
 }
 
+enum IngredientAction {
+  ADD    // Añadir ingrediente extra
+  REMOVE // Quitar ingrediente base
+}
+
+// ==================== PEDIDOS ====================
+
 model Order {
-  id        String  @id @default(uuid())
-  userId    String 
-  user      User    @relation(fields: [userId], references: [id])
-  total     Float
-  status    OrderStatus @default(pendiente)
+  id       String  @id @default(uuid())
+  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId   String?
+  isGuest  Boolean @default(false)
+
+  // Datos de contacto (obligatorios siempre)
+  customerName  String
+  customerEmail String
+  customerPhone String
+
+  // Tipo de entrega
+  deliveryType DeliveryType @default(DELIVERY)
+
+  // Dirección (solo si deliveryType = DELIVERY)
+  address   Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  addressId String?
+
+  // Snapshot de dirección de entrega (para historial)
+  deliveryStreet       String?
+  deliveryCity         String?
+  deliveryPostalCode   String?
+  deliveryInstructions String?
+
+  // Hora programada (opcional)
+  scheduledFor  DateTime? // Hora solicitada por el cliente
+  estimatedTime DateTime? // Hora estimada por la pizzería
+
+  // Precios
+  subtotal    Float
+  deliveryFee Float @default(0)  // 0 si es PICKUP
+  total       Float
+
+  // Estado
+  status    OrderStatus @default(PENDING)
+
   createdAt DateTime @default(now())
-  orderItems OrderItem[]
+  updatedAt DateTime @updatedAt
+
+  items   OrderItem[]
+  payment Payment?
+
+  @@index([userId])
+  @@index([status])
+  @@index([deliveryType])
+  @@index([createdAt])
+}
+
+enum DeliveryType {
+  DELIVERY // A domicilio
+  PICKUP   // Recoger en tienda
 }
 
 model OrderItem {
-  id       String @id @default(uuid())
-  orderId  String
-  order    Order  @relation(fields: [orderId], references: [id])
-  pizzaId  Int
-  pizza    Pizza  @relation(fields: [pizzaId], references: [id])
-  quantity Int
-  price    Float
+  id        String  @id @default(uuid())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantId String?
+
+  // Snapshots para historial (por si cambian precios/nombres)
+  nameSnapshot    String
+  variantSnapshot String?
+  notesSnapshot   String?
+  unitPrice       Float
+  quantity        Int
+  subtotal        Float
+
+  customIngredients OrderItemIngredient[]  // Snapshot de personalizaciones
+
+  @@index([orderId])
+}
+
+// Snapshot de ingredientes personalizados en el pedido
+model OrderItemIngredient {
+  orderItemId   String
+  orderItem     OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  ingredientId  Int
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+  action        IngredientAction
+  priceSnapshot Float      // Precio del ingrediente en el momento del pedido
+
+  @@id([orderItemId, ingredientId, action])
 }
 
 enum OrderStatus {
-  pendiente
-  en_proceso
-  entregado
-  cancelado
+  PENDING    // Recibido, esperando pago/confirmación
+  PAID       // Pagado
+  CONFIRMED  // Confirmado por la pizzería
+  PREPARING  // En cocina
+  READY      // Listo para recoger/enviar
+  ON_THE_WAY // En camino (solo DELIVERY)
+  DELIVERED  // Entregado/Recogido
+  CANCELLED  // Cancelado
+}
+
+// ==================== PAGOS ====================
+
+model Payment {
+  id                String          @id @default(uuid())
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId           String          @unique
+  provider          PaymentProvider @default(STRIPE)
+  providerPaymentId String?         // ID del paymentIntent de Stripe
+  amount            Float
+  currency          String          @default("EUR")
+  status            PaymentStatus   @default(PENDING)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([providerPaymentId])
+  @@index([status])
+}
+
+enum PaymentProvider {
+  STRIPE            // Pago online con tarjeta
+  CASH_ON_DELIVERY  // Efectivo al recibir/recoger
+  CARD_ON_DELIVERY  // Datáfono al recibir/recoger
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
 }
