@@ -1,11 +1,13 @@
 import express from 'express'
 import { errorHandler } from './middlewares/errorHandler'
-import pizzaRoutes from './routes/pizzaRoutes'
-import userRoutes from './routes/userRoutes'
+import productRoutes from './routes/productRoutes'
+// import userRoutes from './routes/userRoutes'
 import ingredientRoutes from './routes/ingredientRoutes'
+import helmet from 'helmet'
 
 const app = express()
 
+app.use(helmet())
 app.use(express.json())
 
 app.get('/', (req, res) => {
@@ -13,9 +15,9 @@ app.get('/', (req, res) => {
 })
 
 // Routes
-app.use('/api/pizza', pizzaRoutes)
-app.use('/api/user', userRoutes)
-app.use('/api/ingredient', ingredientRoutes)
+app.use('/api/products', productRoutes)
+// app.use('/api/user', userRoutes)
+app.use('/api/ingredients', ingredientRoutes)
 
 // Global Error Handler
 app.use(errorHandler)
