@@ -1,40 +1,22 @@
 import { Request, Response, NextFunction } from 'express'
-import { PrismaClient } from '../generated/prisma'
 import { comparePassword, generateToken, hashPassword } from '../services/authService'
 import { AppError } from '../utils/AppError'
 import { setAuthCookie, clearAuthCookie } from '../utils/cookies'
-
-const prisma = new PrismaClient()
+import * as userModel from '../models/user'
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password, name, surname, phone } = req.body
 
-    const existingEmail = await prisma.user.findUnique({
-      where: { email }
-    })
-
+    const existingEmail = await userModel.findUserByEmail(email)
     if (existingEmail) throw new AppError('El usuario ya existe', 409)
 
-    const existingPhone = await prisma.user.findUnique({
-      where: { phone }
-    })
-
+    const existingPhone = await userModel.findUserByPhone(phone)
     if (existingPhone) throw new AppError('Teléfono ya registrado', 409)
 
     const hashedPassword = await hashPassword(password)
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        surname,
-        phone,
-        role: 'CUSTOMER'
-      }
-    })
-
+    const user = await userModel.createUser({ email, password: hashedPassword, name, surname, phone })
     const { password: _, ...publicUser } = user
 
     const token = generateToken(user.id, user.role)
@@ -58,12 +40,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const { email, password } = req.body
 
-    const user = await prisma.user.findUnique({
-      where: {
-        email,
-        active: true
-      }
-    })
+    const user = await userModel.findUserByEmail(email)
     if (!user) throw new AppError('Usuario no existe o desactivado', 401)
 
     const isValid = await comparePassword(password, user.password)
@@ -94,9 +71,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
       throw new AppError('No autenticado', 401)
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    })
+    const user = await userModel.findUserById(req.user.id)
 
     if (!user) {
       throw new AppError('Usuario no encontrado', 404)
