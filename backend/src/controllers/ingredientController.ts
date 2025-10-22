@@ -1,12 +1,14 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import * as ingredientModel from '../models/ingredient'
 
-export const getIngredients = async (req: Request, res: Response) => {
+export const getIngredients = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const ingredients = await ingredientModel.getAllIngredients()
-    res.json(ingredients)
+    res.status(200).json({
+      success: true,
+      data: ingredients
+    })
   } catch (error: any) {
-    console.error(error)
-    res.status(500).json({ error: 'Error al obtener ingredientes' })
+    next(error)
   }
 }

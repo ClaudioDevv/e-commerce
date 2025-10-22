@@ -1,10 +1,13 @@
 import express from 'express'
-import { errorHandler } from './middlewares/errorHandler'
+
+import addressRouter from './routes/addressRoutes'
 import productRoutes from './routes/productRoutes'
 import authRoutes from './routes/authRoutes'
 import ingredientRoutes from './routes/ingredientRoutes'
+
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
+import { errorHandler } from './middlewares/errorHandler'
 
 const app = express()
 
@@ -20,6 +23,7 @@ app.get('/', (req, res) => {
 app.use('/api/products', productRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/ingredients', ingredientRoutes)
+app.use('/api/addresses', addressRouter)
 
 // Global Error Handler depués de las rutas
 app.use(errorHandler)

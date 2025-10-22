@@ -1,18 +1,22 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import * as productModel from '../models/product'
 import { Category } from '../generated/prisma'
+import { AppError } from '../utils/AppError'
 
-export const getAllProducts = async (req: Request, res: Response) => {
+export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const products = await productModel.getAll()
-    res.json(products)
-  } catch (error: any) {
-    console.error(error)
-    res.status(500).json({ error: 'Error al obtener productos' })
+    res.status(200).json({
+      success: true,
+      data: products,
+      count: products.length
+    })
+  } catch (error) {
+    next(error)
   }
 }
 
-export const getProductsByCategory = async (req: Request, res: Response) => {
+export const getProductsByCategory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { category: catParam } = req.params
     const upperCat = catParam.toUpperCase()
@@ -20,15 +24,17 @@ export const getProductsByCategory = async (req: Request, res: Response) => {
     // Validación: comprobar que la string recibida es un valor del enum
     const validValues = Object.values(Category) as string[]
     if (!validValues.includes(upperCat)) {
-      return res.status(400).json({ message: 'Categoría inválida.' })
+      throw new AppError('Categoría no existente', 400)
     }
 
     const category = upperCat as Category
 
     const products = await productModel.getByCategory(category)
-    res.json(products)
-  } catch (error: any) {
-    console.error(error)
-    res.status(500).json({ message: 'Error al obtener los productos por categoría' })
+    res.status(200).json({
+      success: true,
+      data: products
+    })
+  } catch (error) {
+    next(error)
   }
 }
