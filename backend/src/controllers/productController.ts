@@ -38,3 +38,22 @@ export const getProductsByCategory = async (req: Request, res: Response, next: N
     next(error)
   }
 }
+
+export const getProductByIdentifier = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params
+
+    const product = await productModel.getById(id)
+
+    if (!product) {
+      throw new AppError('Producto no encontrado', 404)
+    }
+
+    res.status(200).json({
+      success: true,
+      data: product
+    })
+  } catch (error) {
+    next(error)
+  }
+}

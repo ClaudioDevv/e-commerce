@@ -46,7 +46,7 @@ model Address {
   id           String   @id @default(uuid())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
-  label        String?  // "Casa", "Trabajo"
+  label        String?
   street       String
   city         String
   postalCode   String

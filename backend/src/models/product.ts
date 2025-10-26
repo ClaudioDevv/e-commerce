@@ -14,3 +14,19 @@ export const getByCategory = async (category: Category) => {
     orderBy: { name: 'asc' }
   })
 }
+
+export const getById = async (id: string) => {
+  return await prisma.product.findUnique({
+    where: { id },
+    include: {
+      variants: { where: { active: true } },
+      pizzaConfig: {
+        include: {
+          baseIngredients: {
+            include: { ingredient: true }
+          }
+        }
+      }
+    }
+  })
+}
