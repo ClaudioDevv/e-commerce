@@ -17,7 +17,7 @@ app.use(express.json())
 app.use(cookieParser())
 
 app.get('/', (req, res) => {
-  res.send('<h1>Hola Mundo<h1>')
+  res.json({ message: 'Api funcionando correctamente' })
 })
 
 // Routes

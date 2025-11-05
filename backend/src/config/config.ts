@@ -17,16 +17,31 @@ interface Config {
   };
 }
 
+// Validar variables críticas
+const requiredEnvVars = [
+  'DATABASE_URL',
+  'JWT_SECRET'
+]
+
+const missingEnvVars = requiredEnvVars.filter(
+  envVar => !process.env[envVar]
+)
+
+if (missingEnvVars.length > 0) {
+  throw new Error(
+    `Faltan variables de entorno: ${missingEnvVars.join(', ')}\n` +
+    'Comprueba tu archivo .env.'
+  )
+}
+
 const config: Config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
-
   database: {
-    url: process.env.DATABASE_URL || '',
+    url: process.env.DATABASE_URL!,
   },
-
   jwt: {
-    secret: process.env.JWT_SECRET || 'this-is-an-secret-key-very-large-and-secure',
+    secret: process.env.JWT_SECRET!,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 
