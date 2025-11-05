@@ -1,4 +1,5 @@
 import { PrismaClient } from '../generated/prisma'
+import { RegisterInput } from '../validators/authValidator'
 
 const prisma = new PrismaClient()
 
@@ -14,13 +15,7 @@ export const findUserByPhone = async (phone: string) => {
   })
 }
 
-export const createUser = async (userData: {
-  email: string
-  password: string
-  name: string
-  surname: string
-  phone: string
-}) => {
+export const createUser = async (userData: RegisterInput['body']) => {
   return await prisma.user.create({
     data: {
       ...userData,
