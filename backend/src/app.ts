@@ -5,6 +5,7 @@ import productRoutes from './routes/productRoutes'
 import authRoutes from './routes/authRoutes'
 import ingredientRoutes from './routes/ingredientRoutes'
 import cartRoutes from './routes/cartRoutes'
+import orderRoutes from './routes/orderRoutes'
 
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/ingredients', ingredientRoutes)
 app.use('/api/addresses', addressRouter)
 app.use('/api/cart', cartRoutes)
+app.use('/api/orders', orderRoutes)
 
 // Global Error Handler depués de las rutas
 app.use(errorHandler)

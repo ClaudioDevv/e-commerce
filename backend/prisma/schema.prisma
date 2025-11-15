@@ -9,6 +9,11 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+generator dbml {
+  provider = "prisma-dbml-generator"
+  output = "./dbml"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -67,7 +72,7 @@ model Product {
   name        String
   description String?
   category    Category
-  basePrice   Float            
+  basePrice   Decimal          @db.Decimal(10,2)  
   imageUrl    String?
   active      Boolean          @default(true)
   createdAt   DateTime         @default(now())
@@ -92,7 +97,7 @@ enum Category {
 model ProductVariant {
   id         String   @id @default(uuid())
   name       String   // "Mediana", "Familiar", "1L", "33cl"
-  priceDelta Float    @default(0)  // Diferencia sobre basePrice
+  priceDelta Decimal  @db.Decimal(10,2)
   active     Boolean  @default(true)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  String
@@ -116,7 +121,7 @@ model PizzaConfig {
 model Ingredient {
   id         Int                   @id @default(autoincrement())
   name       String                @unique
-  extraPrice Float                 // Precio al añadir como extra
+  extraPrice Decimal               @db.Decimal(10,2)
   available  Boolean               @default(true)
   category   IngredientCategory?
   imageUrl   String?
@@ -192,9 +197,8 @@ model Order {
   userId   String?
   isGuest  Boolean @default(false)
 
-  // Datos de contacto (obligatorios siempre)
+  // Datos de contacto (obligatorios siempre que sea guest) de un usuario ya tendremos esos datos
   customerName  String
-  customerEmail String
   customerPhone String
 
   // Tipo de entrega
@@ -215,9 +219,9 @@ model Order {
   estimatedTime DateTime? // Hora estimada por la pizzería
 
   // Precios
-  subtotal    Float
-  deliveryFee Float @default(0)  // 0 si es PICKUP
-  total       Float
+  subtotal    Decimal   @db.Decimal(10,2)
+  deliveryFee Decimal   @db.Decimal(10,2)
+  total       Decimal   @db.Decimal(10,2)
 
   // Estado
   status    OrderStatus @default(PENDING)
@@ -252,9 +256,9 @@ model OrderItem {
   nameSnapshot    String
   variantSnapshot String?
   notesSnapshot   String?
-  unitPrice       Float
+  unitPrice       Decimal   @db.Decimal(10,2)
   quantity        Int
-  subtotal        Float
+  subtotal        Decimal   @db.Decimal(10,2)
 
   customIngredients OrderItemIngredient[]  // Snapshot de personalizaciones
 
@@ -268,7 +272,7 @@ model OrderItemIngredient {
   ingredientId  Int
   ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
   action        IngredientAction
-  priceSnapshot Float      // Precio del ingrediente en el momento del pedido
+  priceSnapshot Decimal   @db.Decimal(10,2)
 
   @@id([orderItemId, ingredientId, action])
 }
@@ -300,6 +304,31 @@ model Payment {
 
   @@index([providerPaymentId])
   @@index([status])
+}
+
+model Settings {
+  id             String    @id @default(uuid())
+
+  // Horarios (usamos texto porque TIME es incómodo en JS/TS)
+  openTime       String    // Ej: "12:00"
+  closeTime      String    // Ej: "23:30"
+
+  // Opcional: descanso/siesta
+  breakStart     String?   // Ej: "16:00"
+  breakEnd       String?   // Ej: "19:00"
+
+  // Configuración pedidos
+  deliveryFee    Decimal   @db.Decimal(10,2) @default(0.00)
+  minOrderAmount Decimal   @db.Decimal(10,2) @default(0.00)
+  avgPrepMinutes Int       @default(30)
+  autoAcceptOrders Boolean @default(true)
+
+  // Control de estado del negocio
+  temporarilyClosed Boolean @default(false) // útil para cierres rápidos
+  statusMessage      String?               // Ej: "Cerrado por mantenimiento"
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum PaymentProvider {

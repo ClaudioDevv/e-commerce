@@ -1,3 +1,4 @@
+import { Decimal } from '@prisma/client/runtime/library'
 import { Ingredient, PrismaClient } from '../generated/prisma'
 import { AppError } from '../utils/AppError'
 import { calculateCartItemPrice } from '../utils/priceCalculator'
@@ -273,7 +274,7 @@ export const deleteCart = async (userId: string) => {
 export const getCartSummary = async (userId: string) => {
   const cart = await getCartByUserId(userId)
 
-  let subtotal = 0
+  let subtotal = new Decimal(0)
   let totalItems = 0
 
   for (const item of cart) {
@@ -287,12 +288,12 @@ export const getCartSummary = async (userId: string) => {
       addedIngredients
     )
 
-    subtotal += unitPrice * item.quantity
+    subtotal = subtotal.add(unitPrice.mul(item.quantity))
     totalItems += item.quantity
   }
 
   return {
-    subtotal: Number(subtotal.toFixed(2)),
+    subtotal: subtotal.toString(),
     totalItems,
     itemsCount: cart.length
   }

@@ -1,0 +1,296 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  email String [unique, not null]
+  password String [not null]
+  name String [not null]
+  surname String [not null]
+  phone String [unique, not null]
+  role UserRole [not null, default: 'CUSTOMER']
+  active Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  addresses Address [not null]
+  cartItems CartItem [not null]
+  orders Order [not null]
+}
+
+Table Address {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  label String
+  street String [not null]
+  city String [not null]
+  postalCode String [not null]
+  province String
+  instructions String
+  isDefault Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  orders Order [not null]
+}
+
+Table Product {
+  id String [pk]
+  name String [not null]
+  description String
+  category Category [not null]
+  basePrice Decimal [not null]
+  imageUrl String
+  active Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  variants ProductVariant [not null]
+  pizzaConfig PizzaConfig
+  cartItems CartItem [not null]
+  orderItems OrderItem [not null]
+}
+
+Table ProductVariant {
+  id String [pk]
+  name String [not null]
+  priceDelta Decimal [not null]
+  active Boolean [not null, default: true]
+  product Product [not null]
+  productId String [not null]
+  cartItems CartItem [not null]
+  orderItems OrderItem [not null]
+}
+
+Table PizzaConfig {
+  id String [pk]
+  product Product [not null]
+  productId String [unique, not null]
+  allowCustomization Boolean [not null, default: true]
+  baseIngredients PizzaBaseIngredient [not null]
+}
+
+Table Ingredient {
+  id Int [pk, increment]
+  name String [unique, not null]
+  extraPrice Decimal [not null]
+  available Boolean [not null, default: true]
+  category IngredientCategory
+  imageUrl String
+  createdAt DateTime [default: `now()`, not null]
+  pizzaBase PizzaBaseIngredient [not null]
+  cartCustom CartItemIngredient [not null]
+  orderCustom OrderItemIngredient [not null]
+}
+
+Table PizzaBaseIngredient {
+  pizzaConfigId String [not null]
+  pizzaConfig PizzaConfig [not null]
+  ingredientId Int [not null]
+  ingredient Ingredient [not null]
+
+  indexes {
+    (pizzaConfigId, ingredientId) [pk]
+  }
+}
+
+Table CartItem {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  product Product [not null]
+  productId String [not null]
+  variant ProductVariant
+  variantId String
+  quantity Int [not null, default: 1]
+  notes String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  customIngredients CartItemIngredient [not null]
+}
+
+Table CartItemIngredient {
+  cartItemId String [not null]
+  cartItem CartItem [not null]
+  ingredientId Int [not null]
+  ingredient Ingredient [not null]
+  action IngredientAction [not null]
+
+  indexes {
+    (cartItemId, ingredientId, action) [pk]
+  }
+}
+
+Table Order {
+  id String [pk]
+  user User
+  userId String
+  isGuest Boolean [not null, default: false]
+  customerName String [not null]
+  customerPhone String [not null]
+  deliveryType DeliveryType [not null, default: 'DELIVERY']
+  address Address
+  addressId String
+  deliveryStreet String
+  deliveryCity String
+  deliveryPostalCode String
+  deliveryInstructions String
+  scheduledFor DateTime
+  estimatedTime DateTime
+  subtotal Decimal [not null]
+  deliveryFee Decimal [not null]
+  total Decimal [not null]
+  status OrderStatus [not null, default: 'PENDING']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  items OrderItem [not null]
+  payment Payment
+}
+
+Table OrderItem {
+  id String [pk]
+  order Order [not null]
+  orderId String [not null]
+  product Product [not null]
+  productId String [not null]
+  variant ProductVariant
+  variantId String
+  nameSnapshot String [not null]
+  variantSnapshot String
+  notesSnapshot String
+  unitPrice Decimal [not null]
+  quantity Int [not null]
+  subtotal Decimal [not null]
+  customIngredients OrderItemIngredient [not null]
+}
+
+Table OrderItemIngredient {
+  orderItemId String [not null]
+  orderItem OrderItem [not null]
+  ingredientId Int [not null]
+  ingredient Ingredient [not null]
+  action IngredientAction [not null]
+  priceSnapshot Decimal [not null]
+
+  indexes {
+    (orderItemId, ingredientId, action) [pk]
+  }
+}
+
+Table Payment {
+  id String [pk]
+  order Order [not null]
+  orderId String [unique, not null]
+  provider PaymentProvider [not null, default: 'STRIPE']
+  providerPaymentId String
+  amount Float [not null]
+  currency String [not null, default: 'EUR']
+  status PaymentStatus [not null, default: 'PENDING']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Settings {
+  id String [pk]
+  openTime String [not null]
+  closeTime String [not null]
+  breakStart String
+  breakEnd String
+  deliveryFee Decimal [not null, default: 0]
+  minOrderAmount Decimal [not null, default: 0]
+  avgPrepMinutes Int [not null, default: 20]
+  autoAcceptOrders Boolean [not null, default: true]
+  temporarilyClosed Boolean [not null, default: false]
+  statusMessage String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Enum UserRole {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+Enum Category {
+  PIZZA
+  BEBIDA
+  ENTRANTE
+  POSTRE
+}
+
+Enum IngredientCategory {
+  QUESO
+  CARNE
+  VEGETAL
+  SALSA
+  EXTRA
+}
+
+Enum IngredientAction {
+  ADD
+  REMOVE
+}
+
+Enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+Enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  PREPARING
+  READY
+  ON_THE_WAY
+  DELIVERED
+  CANCELLED
+}
+
+Enum PaymentProvider {
+  STRIPE
+  CASH_ON_DELIVERY
+  CARD_ON_DELIVERY
+}
+
+Enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+Ref: Address.userId > User.id [delete: Cascade]
+
+Ref: ProductVariant.productId > Product.id [delete: Cascade]
+
+Ref: PizzaConfig.productId - Product.id [delete: Cascade]
+
+Ref: PizzaBaseIngredient.pizzaConfigId > PizzaConfig.id [delete: Cascade]
+
+Ref: PizzaBaseIngredient.ingredientId > Ingredient.id
+
+Ref: CartItem.userId > User.id [delete: Cascade]
+
+Ref: CartItem.productId > Product.id [delete: Cascade]
+
+Ref: CartItem.variantId > ProductVariant.id [delete: Set Null]
+
+Ref: CartItemIngredient.cartItemId > CartItem.id [delete: Cascade]
+
+Ref: CartItemIngredient.ingredientId > Ingredient.id
+
+Ref: Order.userId > User.id [delete: Set Null]
+
+Ref: Order.addressId > Address.id [delete: Set Null]
+
+Ref: OrderItem.orderId > Order.id [delete: Cascade]
+
+Ref: OrderItem.productId > Product.id
+
+Ref: OrderItem.variantId > ProductVariant.id [delete: Set Null]
+
+Ref: OrderItemIngredient.orderItemId > OrderItem.id [delete: Cascade]
+
+Ref: OrderItemIngredient.ingredientId > Ingredient.id
+
+Ref: Payment.orderId - Order.id [delete: Cascade]
