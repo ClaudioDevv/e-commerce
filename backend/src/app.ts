@@ -1,14 +1,8 @@
 import express from 'express'
-
-import addressRouter from './routes/addressRoutes'
-import productRoutes from './routes/productRoutes'
-import authRoutes from './routes/authRoutes'
-import ingredientRoutes from './routes/ingredientRoutes'
-import cartRoutes from './routes/cartRoutes'
-import orderRoutes from './routes/orderRoutes'
-
 import helmet from 'helmet'
+// import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import routes from './routes/index'
 import { errorHandler } from './middlewares/errorHandler'
 
 const app = express()
@@ -16,18 +10,26 @@ const app = express()
 app.use(helmet())
 app.use(express.json())
 app.use(cookieParser())
+app.disable('x-powered-by')
 
 app.get('/', (req, res) => {
   res.json({ message: 'Api funcionando correctamente' })
 })
 
-// Routes
-app.use('/api/products', productRoutes)
-app.use('/api/auth', authRoutes)
-app.use('/api/ingredients', ingredientRoutes)
-app.use('/api/addresses', addressRouter)
-app.use('/api/cart', cartRoutes)
-app.use('/api/orders', orderRoutes)
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+app.use('/api', routes)
+
+// 404 handler
+app.use(/.*/, (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Ruta ${req.originalUrl} no encontrada`
+  })
+})
 
 // Global Error Handler depués de las rutas
 app.use(errorHandler)
