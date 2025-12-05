@@ -5,7 +5,7 @@ const router = Router()
 
 /**
  * @swagger
- * /ingredients:
+ * /api/ingredients:
  *   get:
  *     summary: Obtener todos los ingredientes
  *     tags: [Ingredients]

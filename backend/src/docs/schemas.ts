@@ -5,34 +5,24 @@
  *
  *     RegisterInput:
  *       type: object
- *       required:
- *         - email
- *         - password
- *         - name
- *         - surname
- *         - phone
+ *       required: [email, password, name, surname, phone]
  *       properties:
  *         email:
  *           type: string
  *           format: email
- *           description: Email del usuario
  *         password:
  *           type: string
  *           minLength: 8
  *           format: password
- *           description: Contraseña (mínimo 8 caracteres)
  *         name:
  *           type: string
  *           minLength: 2
- *           description: Nombre del usuario
  *         surname:
  *           type: string
  *           minLength: 2
- *           description: Apellido del usuario
  *         phone:
  *           type: string
  *           pattern: '^[0-9]{9}$'
- *           description: Teléfono (exactamente 9 dígitos)
  *       example:
  *         email: "juan@example.com"
  *         password: "miPassword123"
@@ -42,9 +32,7 @@
  *
  *     LoginInput:
  *       type: object
- *       required:
- *         - email
- *         - password
+ *       required: [email, password]
  *       properties:
  *         email:
  *           type: string
@@ -96,13 +84,10 @@
  *               $ref: '#/components/schemas/User'
  *             token:
  *               type: string
- *               description: JWT token (también se envía en cookie httpOnly)
  *
  *     CustomIngredient:
  *       type: object
- *       required:
- *         - ingredientId
- *         - action
+ *       required: [ingredientId, action]
  *       properties:
  *         ingredientId:
  *           type: integer
@@ -112,9 +97,7 @@
  *
  *     CartItemInput:
  *       type: object
- *       required:
- *         - productId
- *         - quantity
+ *       required: [productId, quantity]
  *       properties:
  *         productId:
  *           type: string
@@ -122,7 +105,7 @@
  *         variantId:
  *           type: string
  *           format: uuid
- *           description: ID de la variante. Requerido para pizzas
+ *           nullable: true
  *         quantity:
  *           type: integer
  *           minimum: 1
@@ -130,6 +113,7 @@
  *         notes:
  *           type: string
  *           maxLength: 100
+ *           nullable: true
  *         customIngredients:
  *           type: array
  *           items:
@@ -170,7 +154,6 @@
  *           type: string
  *         extraPrice:
  *           type: string
- *           description: Precio extra por añadir el ingrediente
  *         available:
  *           type: boolean
  *         category:
@@ -183,14 +166,6 @@
  *         createdAt:
  *           type: string
  *           format: date-time
- *       example:
- *         id: 1
- *         name: "Mozzarella"
- *         extraPrice: "1.50"
- *         available: true
- *         category: "QUESO"
- *         imageUrl: "https://example.com/mozzarella.jpg"
- *         createdAt: "2024-01-15T10:30:00.000Z"
  *
  *     Product:
  *       type: object
@@ -208,7 +183,6 @@
  *           enum: [PIZZA, BEBIDA, ENTRANTE, POSTRE]
  *         basePrice:
  *           type: string
- *           description: Precio base del producto
  *         imageUrl:
  *           type: string
  *           nullable: true
@@ -220,16 +194,6 @@
  *         updatedAt:
  *           type: string
  *           format: date-time
- *       example:
- *         id: "550e8400-e29b-41d4-a716-446655440000"
- *         name: "Pizza Margarita"
- *         description: "Pizza clásica con tomate y mozzarella"
- *         category: "PIZZA"
- *         basePrice: "8.50"
- *         imageUrl: "https://example.com/margarita.jpg"
- *         active: true
- *         createdAt: "2024-01-15T10:30:00.000Z"
- *         updatedAt: "2024-01-15T10:30:00.000Z"
  *
  *     Variant:
  *       type: object
@@ -239,21 +203,13 @@
  *           format: uuid
  *         name:
  *           type: string
- *           description: Nombre de la variante (ej. Mediana, Familiar, 1L)
  *         priceDelta:
  *           type: string
- *           description: Diferencia de precio respecto al precio base
  *         active:
  *           type: boolean
  *         productId:
  *           type: string
  *           format: uuid
- *       example:
- *         id: "650e8400-e29b-41d4-a716-446655440001"
- *         name: "Familiar"
- *         priceDelta: "5.00"
- *         active: true
- *         productId: "550e8400-e29b-41d4-a716-446655440000"
  *
  *     PizzaBaseIngredient:
  *       type: object
@@ -278,80 +234,19 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/PizzaBaseIngredient'
- *       example:
- *         id: "750e8400-e29b-41d4-a716-446655440002"
- *         productId: "550e8400-e29b-41d4-a716-446655440000"
- *         allowCustomization: true
- *         baseIngredients:
- *           - ingredientId: 1
- *             ingredient:
- *               id: 1
- *               name: "Mozzarella"
- *               extraPrice: "1.50"
- *               available: true
  *
  *     ProductDetail:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *         name:
- *           type: string
- *         description:
- *           type: string
- *           nullable: true
- *         category:
- *           type: string
- *           enum: [PIZZA, BEBIDA, ENTRANTE, POSTRE]
- *         basePrice:
- *           type: string
- *         imageUrl:
- *           type: string
- *           nullable: true
- *         active:
- *           type: boolean
- *         createdAt:
- *           type: string
- *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
- *         variants:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/Variant'
- *         pizzaConfig:
- *           $ref: '#/components/schemas/PizzaConfig'
- *           nullable: true
- *           description: Solo presente si el producto es una pizza
- *       example:
- *         id: "550e8400-e29b-41d4-a716-446655440000"
- *         name: "Pizza Margarita"
- *         description: "Pizza clásica con tomate y mozzarella"
- *         category: "PIZZA"
- *         basePrice: "8.50"
- *         imageUrl: "https://example.com/margarita.jpg"
- *         active: true
- *         variants:
- *           - id: "650e8400-e29b-41d4-a716-446655440001"
- *             name: "Mediana"
- *             priceDelta: "0.00"
- *             active: true
- *           - id: "650e8400-e29b-41d4-a716-446655440002"
- *             name: "Familiar"
- *             priceDelta: "5.00"
- *             active: true
- *         pizzaConfig:
- *           id: "750e8400-e29b-41d4-a716-446655440002"
- *           allowCustomization: true
- *           baseIngredients:
- *             - ingredientId: 1
- *               ingredient:
- *                 id: 1
- *                 name: "Mozzarella"
- *                 extraPrice: "1.50"
- *                 available: true
+ *       allOf:
+ *         - $ref: '#/components/schemas/Product'
+ *         - type: object
+ *           properties:
+ *             variants:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Variant'
+ *             pizzaConfig:
+ *               $ref: '#/components/schemas/PizzaConfig'
+ *               nullable: true
  *
  *     CartItemIngredient:
  *       type: object
@@ -407,43 +302,116 @@
  *           type: integer
  *         itemsCount:
  *           type: integer
- *       example:
- *         subtotal: "45.50"
- *         totalItems: 5
- *         itemsCount: 3
+ *
+ *     Address:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         userId:
+ *           type: string
+ *           format: uuid
+ *         label:
+ *           type: string
+ *           maxLength: 20
+ *           nullable: true
+ *         street:
+ *           type: string
+ *           minLength: 5
+ *           maxLength: 100
+ *         city:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *         postalCode:
+ *           type: string
+ *           pattern: '^[0-9]{5}$'
+ *         province:
+ *           type: string
+ *           maxLength: 50
+ *           nullable: true
+ *         instructions:
+ *           type: string
+ *           maxLength: 200
+ *           nullable: true
+ *         isDefault:
+ *           type: boolean
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     AddressInput:
+ *       type: object
+ *       required: [street, city, postalCode]
+ *       properties:
+ *         label:
+ *           type: string
+ *           maxLength: 20
+ *         street:
+ *           type: string
+ *           minLength: 5
+ *           maxLength: 100
+ *         city:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *         postalCode:
+ *           type: string
+ *           pattern: '^[0-9]{5}$'
+ *         province:
+ *           type: string
+ *           maxLength: 50
+ *         instructions:
+ *           type: string
+ *           maxLength: 200
+ *         isDefault:
+ *           type: boolean
+ *
+ *     UpdateAddressInput:
+ *       type: object
+ *       properties:
+ *         label:
+ *           type: string
+ *           maxLength: 20
+ *         street:
+ *           type: string
+ *           minLength: 5
+ *           maxLength: 100
+ *         city:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *         postalCode:
+ *           type: string
+ *           pattern: '^[0-9]{5}$'
+ *         province:
+ *           type: string
+ *           maxLength: 50
+ *         instructions:
+ *           type: string
+ *           maxLength: 200
+ *         isDefault:
+ *           type: boolean
+ *       description: Al menos un campo es requerido
  *
  *     ProductsResponse:
  *       type: object
  *       properties:
  *         success:
  *           type: boolean
- *           example: true
  *         data:
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/ProductDetail'
  *         count:
  *           type: integer
- *           description: Número total de productos
- *           example: 15
- *
- *     ProductsByCategoryResponse:
- *       type: object
- *       properties:
- *         success:
- *           type: boolean
- *           example: true
- *         data:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/ProductDetail'
  *
  *     ProductResponse:
  *       type: object
  *       properties:
  *         success:
  *           type: boolean
- *           example: true
  *         data:
  *           $ref: '#/components/schemas/ProductDetail'
  *
@@ -452,11 +420,30 @@
  *       properties:
  *         success:
  *           type: boolean
- *           example: true
  *         data:
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/Ingredient'
+ *
+ *     AddressesResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Address'
+ *         count:
+ *           type: integer
+ *
+ *     AddressResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           $ref: '#/components/schemas/Address'
  *
  *     SuccessResponse:
  *       type: object

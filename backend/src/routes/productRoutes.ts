@@ -5,7 +5,7 @@ const router = Router()
 
 /**
  * @swagger
- * /products:
+ * /api/products:
  *   get:
  *     summary: Obtener todos los productos
  *     tags: [Products]
@@ -28,7 +28,7 @@ router.get('/', getAllProducts)
 
 /**
  * @swagger
- * /products/category/{category}:
+ * /api/products/category/{category}:
  *   get:
  *     summary: Obtener productos por categoría
  *     tags: [Products]
@@ -69,7 +69,7 @@ router.get('/category/:category', getProductsByCategory)
 
 /**
  * @swagger
- * /products/{id}:
+ * /api/products/{id}:
  *   get:
  *     summary: Obtener un producto por ID
  *     tags: [Products]
