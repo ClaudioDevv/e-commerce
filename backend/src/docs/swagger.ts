@@ -29,16 +29,20 @@ const options: swaggerJsdoc.Options = {
     },
     tags: [
       {
-        name: 'Cart',
-        description: 'Gestión del carrito de compras (usuarios autenticados)'
-      },
-      {
         name: 'Auth',
         description: 'Gestión de usuarios y autenticación'
       },
       {
         name: 'Products',
-        description: 'Gestión de productos'
+        description: 'Gestión de productos, variantes y categorías'
+      },
+      {
+        name: 'Ingredients',
+        description: 'Gestión de ingredientes para personalización de pizzas'
+      },
+      {
+        name: 'Cart',
+        description: 'Gestión del carrito de compras'
       },
       {
         name: 'Orders',
