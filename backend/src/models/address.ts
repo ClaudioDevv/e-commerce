@@ -1,7 +1,5 @@
-import { PrismaClient } from '../generated/prisma'
+import { prisma } from '../lib/prisma'
 import { AppError } from '../utils/AppError'
-
-const prisma = new PrismaClient()
 
 export const getAll = async (userId: string) => {
   return await prisma.address.findMany({

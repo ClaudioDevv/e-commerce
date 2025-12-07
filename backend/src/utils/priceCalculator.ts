@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library'
+import { Decimal } from 'decimal.js'
 import { Product, ProductVariant, Ingredient } from '../generated/prisma'
 
 export const calculateCartItemPrice = (

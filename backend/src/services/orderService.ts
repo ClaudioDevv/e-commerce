@@ -1,7 +1,6 @@
-import { CartItem, ProductVariant, PrismaClient } from '../generated/prisma'
+import { CartItem, ProductVariant } from '../generated/prisma'
 import { AppError } from '../utils/AppError'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 interface GuestOrderItem {
   productId: string

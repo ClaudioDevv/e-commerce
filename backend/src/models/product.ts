@@ -1,6 +1,5 @@
-import { PrismaClient, Category } from '../generated/prisma'
-
-const prisma = new PrismaClient()
+import { Category } from '../generated/prisma'
+import { prisma } from '../lib/prisma'
 
 export const getAll = async () => {
   return prisma.product.findMany({

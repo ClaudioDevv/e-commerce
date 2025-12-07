@@ -1,10 +1,9 @@
-import { Decimal } from '@prisma/client/runtime/library'
-import { Ingredient, PrismaClient } from '../generated/prisma'
+import { Decimal } from 'decimal.js'
+import { Ingredient } from '../generated/prisma'
 import { AppError } from '../utils/AppError'
 import { calculateCartItemPrice } from '../utils/priceCalculator'
 import { CartItemInput, UpdateCartItemInput } from '../validators/cartValidator'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 export const getCartByUserId = async (userId: string) => {
   const cart = await prisma.cartItem.findMany({

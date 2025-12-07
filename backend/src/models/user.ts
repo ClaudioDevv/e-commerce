@@ -1,7 +1,5 @@
-import { PrismaClient } from '../generated/prisma'
+import { prisma } from '../lib/prisma'
 import { RegisterInput } from '../validators/authValidator'
-
-const prisma = new PrismaClient()
 
 export const findUserByEmail = async (email: string) => {
   return await prisma.user.findUnique({

@@ -1,5 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library'
-import { PrismaClient } from '../generated/prisma'
+import { Decimal } from 'decimal.js'
 import { enrichGuestItems, validateProducts } from '../services/orderService'
 import { AppError } from '../utils/AppError'
 import { calculateCartItemPrice } from '../utils/priceCalculator'
@@ -7,8 +6,7 @@ import { OrderGuestInput, OrderUserInput } from '../validators/orderValidator'
 import { getAddressById } from './address'
 import { deleteCart, getCartByUserId } from './cart'
 import { findUserById } from './user'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 // Interfaz para filtros
 interface OrderFilters {

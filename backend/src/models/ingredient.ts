@@ -1,6 +1,4 @@
-import { PrismaClient } from '../generated/prisma'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 export const getAllIngredients = async () => {
   return prisma.ingredient.findMany({
