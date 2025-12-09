@@ -6,10 +6,12 @@ import routes from './routes/index'
 import { errorHandler } from './middlewares/errorHandler'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './docs/swagger'
+import paymentRoutes from './routes/paymentRoutes'
 
 const app = express()
 
 app.use(helmet())
+app.use('/api/payments', paymentRoutes)
 app.use(express.json())
 app.use(cookieParser())
 app.disable('x-powered-by')

@@ -1,13 +1,6 @@
 import app from './app'
 import config from './config/config'
-import { PrismaClient } from './generated/prisma'
-
-const prisma = new PrismaClient({
-  log: [
-    { level: 'warn', emit: 'event' },
-    { level: 'error', emit: 'event' }
-  ]
-})
+import { prisma } from './lib/prisma'
 
 async function startServer () {
   try {
@@ -26,7 +19,14 @@ async function startServer () {
 startServer()
 
 // Detectar desconexión en runtime
-prisma.$on('error', (e) => {
-  console.error('⚠️ Prisma perdió conexión con la BD:', e)
-  // Reintentar o delegar a PM2 / Docker reinicio
+process.on('SIGINT', async () => {
+  console.log('⚠️ Recibida señal SIGINT, cerrando conexiones...')
+  await prisma.$disconnect()
+  process.exit(0)
+})
+
+process.on('SIGTERM', async () => {
+  console.log('⚠️ Recibida señal SIGTERM, cerrando conexiones...')
+  await prisma.$disconnect()
+  process.exit(0)
 })

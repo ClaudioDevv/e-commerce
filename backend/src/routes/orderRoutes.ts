@@ -8,6 +8,8 @@ const router = Router()
 
 router.post('/', authenticate, validateRequest(orderUserSchema), OrderController.createOrderUserlogged)
 router.post('/guest', validateRequest(orderGuestSchema), OrderController.createOrderGuest)
+router.post('/:id/checkout', authenticate, OrderController.payOrderStripe)
+router.post('/guest/:id/checkout', OrderController.payOrderGuestStripe)
 
 router.get('/', authenticate, OrderController.getAllOrders)
 router.get('/:id', authenticate, OrderController.getOrderById)

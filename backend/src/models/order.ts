@@ -17,6 +17,26 @@ interface OrderFilters {
   limit: number
 }
 
+export const findOrderById = async (id: string) => {
+  return prisma.order.findUnique({
+    where: { id },
+    include: { payment: true }
+  })
+}
+
+export const findGuestOrder = async (id: string) => {
+  return prisma.order.findUnique({
+    where: {
+      id,
+      isGuest: true
+    },
+    include: {
+      items: true,
+      payment: true
+    }
+  })
+}
+
 export const getAllOrders = async (userId: string, filters: OrderFilters) => {
   const { status, dateFrom, dateTo, page, limit } = filters
 
