@@ -16,6 +16,17 @@ Table User {
   addresses Address [not null]
   cartItems CartItem [not null]
   orders Order [not null]
+  refreshtokens RefreshToken [not null]
+}
+
+Table RefreshToken {
+  id String [pk]
+  token String [unique, not null]
+  user User [not null]
+  userId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  expiresAt DateTime [not null]
+  deviceInfo String [not null]
 }
 
 Table Address {
@@ -196,7 +207,7 @@ Table Settings {
   breakEnd String
   deliveryFee Decimal [not null, default: 0]
   minOrderAmount Decimal [not null, default: 0]
-  avgPrepMinutes Int [not null, default: 20]
+  avgPrepMinutes Int [not null, default: 30]
   autoAcceptOrders Boolean [not null, default: true]
   temporarilyClosed Boolean [not null, default: false]
   statusMessage String
@@ -258,6 +269,8 @@ Enum PaymentStatus {
   FAILED
   REFUNDED
 }
+
+Ref: RefreshToken.userId > User.id [delete: Cascade]
 
 Ref: Address.userId > User.id [delete: Cascade]
 

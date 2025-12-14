@@ -35,6 +35,7 @@ model User {
   addresses Address[]
   cartItems CartItem[]
   orders    Order[]
+  refreshtokens  RefreshToken[]
 
   @@index([email])
   @@index([phone])
@@ -44,6 +45,19 @@ enum UserRole {
   CUSTOMER
   ADMIN
   STAFF
+}
+
+model RefreshToken {
+  id          String @id @default(uuid())
+  token       String @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  deviceInfo  String
+
+  @@index([token])
+  @@index([userId])
 }
 
 model Address {

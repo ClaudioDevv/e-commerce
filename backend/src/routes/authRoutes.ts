@@ -1,6 +1,5 @@
-// src/routes/authRoutes.ts
 import { Router } from 'express'
-import { register, login, getMe, logout } from '../controllers/authController'
+import { register, login, refresh, getMe, logout } from '../controllers/authController'
 import { authenticate } from '../middlewares/auth'
 import { validateRequest } from '../middlewares/validateRequest'
 import { registerSchema, loginSchema } from '../validators/authValidator'
@@ -134,6 +133,8 @@ router.post('/register', validateRequest(registerSchema), register)
  *                   message: "Contraseña incorrecta"
  */
 router.post('/login', validateRequest(loginSchema), login)
+
+router.post('/refresh', refresh)
 
 /**
  * @swagger

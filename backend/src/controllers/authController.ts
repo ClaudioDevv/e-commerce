@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
-import { comparePassword, generateToken, hashPassword } from '../services/authService'
+import { comparePassword, generateAccessToken, generateRefreshToken, hashPassword, calculateExpiry, verifyRefreshToken } from '../services/authService'
+import config from '../config/config'
 import { AppError } from '../utils/AppError'
-import { setAuthCookie, clearAuthCookie } from '../utils/cookies'
+import { setAccessTokenCookie, setRefreshTokenCookie, clearAuthCookie } from '../utils/cookies'
 import * as userModel from '../models/user'
+import * as refreshTokenModel from '../models/refreshToken'
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -19,16 +21,23 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const user = await userModel.createUser({ email, password: hashedPassword, name, surname, phone })
     const { password: _, ...publicUser } = user
 
-    const token = generateToken(user.id, user.role)
+    const accessToken = generateAccessToken(user.id, user.role)
+    const refreshToken = generateRefreshToken(user.id)
 
-    setAuthCookie(res, token)
+    const expireAt = calculateExpiry(config.jwt.refreshTokenExpiry)
+    const deviceInfo = req.headers['user-agent'] || 'Unknown'
+
+    refreshTokenModel.saveRefreshToken(user.id, refreshToken, expireAt, deviceInfo)
+
+    setAccessTokenCookie(res, accessToken)
+    setRefreshTokenCookie(res, refreshToken)
 
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
       data: {
-        publicUser,
-        token
+        user: publicUser,
+        accessToken
       }
     })
   } catch (error) {
@@ -46,9 +55,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const isValid = await comparePassword(password, user.password)
     if (!isValid) throw new AppError('Contraseña incorrecta', 401)
 
-    const token = generateToken(user.id, user.role)
+    const accessToken = generateAccessToken(user.id, user.role)
+    const refreshToken = generateRefreshToken(user.id)
 
-    setAuthCookie(res, token)
+    const expireAt = calculateExpiry(config.jwt.refreshTokenExpiry)
+    const deviceInfo = req.headers['user-agent'] || 'Unknown'
+
+    refreshTokenModel.saveRefreshToken(user.id, refreshToken, expireAt, deviceInfo)
+
+    setAccessTokenCookie(res, accessToken)
+    setRefreshTokenCookie(res, refreshToken)
 
     const { password: _, ...publicUser } = user
 
@@ -57,7 +73,65 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       message: 'Login exitoso',
       data: {
         user: publicUser,
-        token
+        accessToken
+      }
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const refresh = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const oldRefreshToken = req.cookies.refresh_token
+
+    if (!oldRefreshToken) {
+      throw new AppError('No existe Refresh Token', 401)
+    }
+
+    const decoded = verifyRefreshToken(oldRefreshToken)
+
+    const tokenRecord = await refreshTokenModel.findRefreshToken(oldRefreshToken)
+
+    if (!tokenRecord) {
+      await refreshTokenModel.deleteAllUserRefreshToken(decoded.userId)
+      throw new AppError('Refresh token inválido o ya usado, Por seguridad cerramos las sesiones', 401)
+    }
+
+    const date = new Date()
+    if (tokenRecord.expiresAt < date) {
+      await refreshTokenModel.deleteRefreshToken(oldRefreshToken)
+      throw new AppError('Refresh token expirado', 401)
+    }
+
+    const user = tokenRecord.user
+
+    if (!user || !user.active) {
+      throw new AppError('Usuario no encontrado o inactivo', 401)
+    }
+
+    await refreshTokenModel.deleteRefreshToken(oldRefreshToken)
+
+    const newAccessToken = generateAccessToken(user.id, user.role)
+    const newRefreshToken = generateRefreshToken(user.id)
+
+    const newExpireAt = calculateExpiry(config.jwt.refreshTokenExpiry)
+
+    await refreshTokenModel.saveRefreshToken(
+      user.id,
+      newRefreshToken,
+      newExpireAt,
+      req.headers['user-agent'] || 'Unknown'
+    )
+
+    setAccessTokenCookie(res, newAccessToken)
+    setRefreshTokenCookie(res, newRefreshToken)
+
+    res.status(200).json({
+      success: true,
+      message: 'Token renovado exitosamente',
+      data: {
+        accessToken: newAccessToken
       }
     })
   } catch (error) {
@@ -88,10 +162,20 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
   }
 }
 
-export const logout = (req: Request, res: Response) => {
-  clearAuthCookie(res)
-  res.status(200).json({
-    succes: true,
-    message: 'Logout exitoso'
-  })
+export const logout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const refreshToken = req.cookies.refresh_token
+    if (refreshToken) {
+      await refreshTokenModel.deleteRefreshToken(refreshToken)
+    }
+
+    clearAuthCookie(res)
+
+    res.status(200).json({
+      succes: true,
+      message: 'Logout exitoso'
+    })
+  } catch (error) {
+    next(error)
+  }
 }

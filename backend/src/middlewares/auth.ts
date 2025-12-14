@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express'
-import { verifyToken } from '../services/authService'
+import { verifyAccessToken } from '../services/authService'
 import { AppError } from '../utils/AppError'
-import { UserRole, PrismaClient } from '../generated/prisma'
-
-const prisma = new PrismaClient()
+import { UserRole } from '../generated/prisma'
+import { prisma } from '../lib/prisma'
 
 declare global {
   namespace Express {
@@ -25,7 +24,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       throw new AppError('No se proporcionó token de autenticación', 401)
     }
 
-    const decoded = verifyToken(token)
+    const decoded = verifyAccessToken(token)
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

@@ -1,4 +1,3 @@
-// Load and type environment variables
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -9,8 +8,10 @@ interface Config {
     url: string;
   };
   jwt: {
-    secret: string;
-    expiresIn: string;
+    accessTokenSecret: string;
+    accessTokenExpiry: string;
+    refreshTokenSecret: string;
+    refreshTokenExpiry: string;
   };
   bcrypt: {
     saltRounds: number;
@@ -20,7 +21,8 @@ interface Config {
 // Validar variables críticas
 const requiredEnvVars = [
   'DATABASE_URL',
-  'JWT_SECRET'
+  'JWT_ACCESS_SECRET',
+  'JWT_REFRESH_SECRET'
 ]
 
 const missingEnvVars = requiredEnvVars.filter(
@@ -41,8 +43,10 @@ const config: Config = {
     url: process.env.DATABASE_URL!,
   },
   jwt: {
-    secret: process.env.JWT_SECRET!,
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    accessTokenSecret: process.env.JWT_ACCESS_SECRET!,
+    accessTokenExpiry: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+    refreshTokenSecret: process.env.JWT_REFRESH_SECRET!,
+    refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '180d',
   },
 
   bcrypt: {
