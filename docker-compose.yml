@@ -1,0 +1,89 @@
+services:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: pizzeria-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: claudio
+      POSTGRES_DB: Pizzeria
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend en modo DESARROLLO
+  backend-dev:
+    build:
+      context: ./backend
+      target: development
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    container_name: pizzeria-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+    volumes:
+      # Bind mount para hot-reload
+      - ./backend:/app
+      # Evita que node_modules del host sobrescriba los del contenedor
+      - backend_node_modules:/app/node_modules
+      # Evita sobrescribir los archivos generados de Prisma
+      - backend_prisma_generated:/app/src/generated
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - dev
+
+  # Backend en modo PRODUCCIÓN
+  backend-prod:
+    build:
+      context: ./backend
+      target: production
+      args:
+        DATABASE_URL: postgresql://postgres:claudio@db:5432/Pizzeria?schema=public
+    container_name: pizzeria-backend-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:claudio@db:5432/Pizzeria?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - prod
+
+volumes:
+  postgres_data:
+  backend_node_modules:
+  backend_prisma_generated:

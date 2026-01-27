@@ -46,6 +46,12 @@ pnpm install
 cd backend  
 pnpm run dev
 
+# Levanta DB + Backend en modo dev (con hot-reload)
+docker-compose --profile dev up --build
+
+# Levanta DB + Backend en modo producción (optimizado)
+docker-compose --profile prod up --build
+
 ## Autor
 Claudio Rivas
 - Github: @ClaudioDevv
