@@ -4,6 +4,7 @@ dotenv.config()
 interface Config {
   port: number;
   nodeEnv: string;
+  frontendUrl: string;
   database: {
     url: string;
   };
@@ -37,6 +38,7 @@ if (missingEnvVars.length > 0) {
 const config: Config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   database: {
     url: process.env.DATABASE_URL!,
   },
