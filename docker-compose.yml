@@ -60,7 +60,7 @@ services:
       context: ./backend
       target: production
       args:
-        DATABASE_URL: postgresql://postgres:claudio@db:5432/Pizzeria?schema=public
+        DATABASE_URL: ${DATABASE_URL}
     container_name: pizzeria-backend-prod
     restart: unless-stopped
     ports:
@@ -68,7 +68,7 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:claudio@db:5432/Pizzeria?schema=public
+      DATABASE_URL: ${DATABASE_URL}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}

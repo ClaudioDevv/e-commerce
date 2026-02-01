@@ -134,6 +134,9 @@ export const cancelOrder = async (id: string, userId: string) => {
     where: {
       id,
       userId,
+    },
+    include: {
+      payment: true
     }
   })
 
@@ -154,9 +157,17 @@ export const cancelOrder = async (id: string, userId: string) => {
     data: { status: 'CANCELLED' }
   })
 
-  // TODO: Si estaba PAID con Stripe, crear reembolso
+  return {
+    order: updatedOrder,
+    payment: order.payment
+  }
+}
 
-  return updatedOrder
+export const expireOrder = async (orderId: string) => {
+  return await prisma.order.update({
+    where: { id: orderId },
+    data: { status: 'CANCELLED' }
+  })
 }
 
 export const createOrderGuest = async (data: OrderGuestInput['body']) => {

@@ -16,7 +16,7 @@ COPY package.json pnpm-lock.yaml ./
 # ==================================
 FROM base AS development
 
-# Pasar argumento en build  *********
+# Pasar argumento en build
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 
@@ -29,7 +29,7 @@ COPY . .
 # Expone el puerto
 EXPOSE 3000
 
-# Genera cliente de Prisma en build time, esto es lo añadido ***********
+# Genera cliente de Prisma en build time
 RUN pnpm prisma generate
 
 # Iniciar proyecto con hot reload

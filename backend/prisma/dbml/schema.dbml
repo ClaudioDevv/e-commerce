@@ -191,7 +191,9 @@ Table Payment {
   order Order [not null]
   orderId String [unique, not null]
   provider PaymentProvider [not null, default: 'STRIPE']
+  sessionId String
   providerPaymentId String
+  providerRefundId String
   amount Float [not null]
   currency String [not null, default: 'EUR']
   status PaymentStatus [not null, default: 'PENDING']

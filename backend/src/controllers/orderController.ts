@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import { Request, Response, NextFunction } from 'express'
 import * as OrderModel from '../models/order'
-import { updatePaymentSession } from '../models/payment'
+import { updatePaymentToRefundedByOrderId, updatePaymentSession } from '../models/payment'
 import { AppError } from '../utils/AppError'
 import { stripe } from '../config/stripe'
 
@@ -51,13 +51,37 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
     const userId = req.user!.id
     const { id } = req.params
 
-    await OrderModel.cancelOrder(id, userId)
+    const { order, payment } = await OrderModel.cancelOrder(id, userId)
 
-    // Reembolso con Stripe mas adelante
+    let refundProcessed = false
+
+    if (order.status === 'CANCELLED' && payment) {
+      if (payment.provider === 'STRIPE' && payment.status === 'SUCCEEDED' && payment.providerPaymentId) {
+        try {
+          const refund = await stripe.refunds.create({
+            payment_intent: payment.providerPaymentId,
+            metadata: {
+              orderId: order.id,
+              userId
+            }
+          })
+
+          await updatePaymentToRefundedByOrderId(order.id, refund.id)
+
+          refundProcessed = true
+          console.log(`Reembolso creado para pedido ${order.id}: ${refund.id}`)
+        } catch (stripeError) {
+          console.error('Error al crear reembolso en Stripe:', stripeError)
+          throw new AppError('Pedido cancelado pero hubo un error al procesar el reembolso. Contacta con soporte.', 500)
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Pedido cancelado correctamente'
+      message: refundProcessed
+        ? 'Pedido cancelado y reembolso procesado correctamente'
+        : 'Pedido cancelado correctamente'
     })
   } catch (error) {
     next(error)

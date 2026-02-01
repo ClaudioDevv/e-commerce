@@ -176,7 +176,7 @@ model CartItem {
   variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   variantId  String?
   quantity   Int        @default(1)
-  notes      String?    // "Sin cebolla", "Bien hecha", etc.
+  notes      String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
@@ -198,8 +198,8 @@ model CartItemIngredient {
 }
 
 enum IngredientAction {
-  ADD    // Añadir ingrediente extra
-  REMOVE // Quitar ingrediente base
+  ADD
+  REMOVE
 }
 
 // ==================== PEDIDOS ====================
@@ -252,8 +252,8 @@ model Order {
 }
 
 enum DeliveryType {
-  DELIVERY // A domicilio
-  PICKUP   // Recoger en tienda
+  DELIVERY
+  PICKUP
 }
 
 model OrderItem {
@@ -308,7 +308,9 @@ model Payment {
   order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId           String          @unique
   provider          PaymentProvider @default(STRIPE)
-  providerPaymentId String?         // ID del paymentIntent de Stripe
+  sessionId         String?
+  providerPaymentId String?
+  providerRefundId  String?
   amount            Float
   currency          String          @default("EUR")
   status            PaymentStatus   @default(PENDING)
@@ -345,9 +347,9 @@ model Settings {
 }
 
 enum PaymentProvider {
-  STRIPE            // Pago online con tarjeta
-  CASH_ON_DELIVERY  // Efectivo al recibir/recoger
-  CARD_ON_DELIVERY  // Datáfono al recibir/recoger
+  STRIPE
+  CASH_ON_DELIVERY
+  CARD_ON_DELIVERY
 }
 
 enum PaymentStatus {

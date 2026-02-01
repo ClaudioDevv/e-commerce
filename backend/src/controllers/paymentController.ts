@@ -1,9 +1,9 @@
 import { Request, Response } from 'express'
-import 'dotenv/config'
 import { stripe } from '../config/stripe'
 import type Stripe from 'stripe'
-import { prisma } from '../lib/prisma'
 import { AppError } from '../utils/AppError'
+import * as OrderModel from '../models/order'
+import * as PaymentModel from '../models/payment'
 
 export const webhook = async (req: Request, res: Response) => {
   try {
@@ -45,10 +45,7 @@ export const webhook = async (req: Request, res: Response) => {
           return res.status(400).json({ error: 'Missing orderId' })
         }
 
-        const order = await prisma.order.findUnique({
-          where: { id: orderId },
-          include: { payment: true }
-        })
+        const order = await OrderModel.findOrderById(orderId)
 
         if (!order) {
           console.error(`Pedido ${orderId} no encontrado`)
@@ -60,19 +57,7 @@ export const webhook = async (req: Request, res: Response) => {
           return res.status(200).json({ received: true })
         }
 
-        await prisma.$transaction([
-          prisma.order.update({
-            where: { id: orderId },
-            data: { status: 'PAID' }
-          }),
-          prisma.payment.update({
-            where: { orderId },
-            data: {
-              status: 'SUCCEEDED',
-              providerPaymentId: session.payment_intent as string
-            }
-          })
-        ])
+        await PaymentModel.confirmPaymentSuccess(orderId, session.payment_intent as string)
 
         console.log(`Pedido ${orderId} marcado como PAID`)
         break
@@ -83,11 +68,37 @@ export const webhook = async (req: Request, res: Response) => {
         const orderId = session.metadata?.orderId
 
         if (orderId) {
-          await prisma.order.update({
-            where: { id: orderId },
-            data: { status: 'CANCELLED' }
-          })
+          await OrderModel.expireOrder(orderId)
           console.log(`Sesión expirada para pedido ${orderId}`)
+        }
+        break
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge
+        const paymentIntentId = charge.payment_intent as string
+
+        if (paymentIntentId) {
+          const payment = await PaymentModel.getPaymentByProviderId(paymentIntentId)
+
+          if (payment && payment.status !== 'REFUNDED') {
+            const refundId = charge.refunds?.data[0]?.id || null
+
+            if (refundId) {
+              await PaymentModel.updatePaymentToRefundedById(payment.id, refundId)
+            }
+
+            console.log(`Reembolso confirmado para payment_intent ${paymentIntentId}`)
+          }
+        }
+        break
+      }
+
+      case 'charge.refund.updated': {
+        const refund = event.data.object as Stripe.Refund
+
+        if (refund.status === 'failed') {
+          console.log(`Reembolso fallido: ${refund.id}`)
         }
         break
       }

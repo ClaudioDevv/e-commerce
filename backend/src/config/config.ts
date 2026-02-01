@@ -22,17 +22,15 @@ interface Config {
 const requiredEnvVars = [
   'DATABASE_URL',
   'JWT_ACCESS_SECRET',
-  'JWT_REFRESH_SECRET'
+  'JWT_REFRESH_SECRET',
 ]
 
-const missingEnvVars = requiredEnvVars.filter(
-  envVar => !process.env[envVar]
-)
+const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar])
 
 if (missingEnvVars.length > 0) {
   throw new Error(
     `Faltan variables de entorno: ${missingEnvVars.join(', ')}\n` +
-    'Comprueba tu archivo .env.'
+      'Comprueba tu archivo .env.'
   )
 }
 
@@ -46,7 +44,7 @@ const config: Config = {
     accessTokenSecret: process.env.JWT_ACCESS_SECRET!,
     accessTokenExpiry: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
     refreshTokenSecret: process.env.JWT_REFRESH_SECRET!,
-    refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '180d',
+    refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '90d',
   },
 
   bcrypt: {
