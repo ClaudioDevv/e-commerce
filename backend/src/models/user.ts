@@ -13,17 +13,17 @@ export const findUserByPhone = async (phone: string) => {
   })
 }
 
+export const findUserById = async (id: string) => {
+  return await prisma.user.findUnique({
+    where: { id }
+  })
+}
+
 export const createUser = async (userData: RegisterInput['body']) => {
   return await prisma.user.create({
     data: {
       ...userData,
       role: 'CUSTOMER'
     }
-  })
-}
-
-export const findUserById = async (id: string) => {
-  return await prisma.user.findUnique({
-    where: { id }
   })
 }

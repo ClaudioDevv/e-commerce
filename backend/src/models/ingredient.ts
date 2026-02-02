@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma'
 
-export const getAllIngredients = async () => {
+export const getAll = async () => {
   return prisma.ingredient.findMany({
     orderBy: { name: 'asc' }
   })

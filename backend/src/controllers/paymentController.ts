@@ -57,7 +57,7 @@ export const webhook = async (req: Request, res: Response) => {
           return res.status(200).json({ received: true })
         }
 
-        await PaymentModel.confirmPaymentSuccess(orderId, session.payment_intent as string)
+        await PaymentModel.confirmSuccess(orderId, session.payment_intent as string)
 
         console.log(`Pedido ${orderId} marcado como PAID`)
         break
@@ -79,13 +79,13 @@ export const webhook = async (req: Request, res: Response) => {
         const paymentIntentId = charge.payment_intent as string
 
         if (paymentIntentId) {
-          const payment = await PaymentModel.getPaymentByProviderId(paymentIntentId)
+          const payment = await PaymentModel.findByProviderId(paymentIntentId)
 
           if (payment && payment.status !== 'REFUNDED') {
             const refundId = charge.refunds?.data[0]?.id || null
 
             if (refundId) {
-              await PaymentModel.updatePaymentToRefundedById(payment.id, refundId)
+              await PaymentModel.markAsRefundedById(payment.id, refundId)
             }
 
             console.log(`Reembolso confirmado para payment_intent ${paymentIntentId}`)

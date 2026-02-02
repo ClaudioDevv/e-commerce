@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import * as OrderModel from '../models/order'
-import { updatePaymentToRefundedByOrderId, updatePaymentSession } from '../models/payment'
+import * as PaymentModel from '../models/payment'
 import { AppError } from '../utils/AppError'
 import { stripe } from '../config/stripe'
 import { createStripeCheckoutSession } from '../services/stripeService'
@@ -66,7 +66,7 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
             }
           })
 
-          await updatePaymentToRefundedByOrderId(order.id, refund.id)
+          await PaymentModel.markAsRefundedByOrderId(order.id, refund.id)
 
           refundProcessed = true
           console.log(`Reembolso creado para pedido ${order.id}: ${refund.id}`)
@@ -147,7 +147,7 @@ export const payOrderStripe = async (req: Request, res: Response, next: NextFunc
 
     const session = await createStripeCheckoutSession(order)
 
-    await updatePaymentSession(order.id, session.id)
+    await PaymentModel.updateSession(order.id, session.id)
 
     res.status(200).json({
       success: true,
@@ -173,7 +173,7 @@ export const payOrderGuestStripe = async (req: Request, res: Response, next: Nex
 
     const session = await createStripeCheckoutSession(order)
 
-    await updatePaymentSession(order.id, session.id)
+    await PaymentModel.updateSession(order.id, session.id)
 
     res.status(200).json({
       success: true,

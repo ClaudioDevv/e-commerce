@@ -1,9 +1,6 @@
 import { prisma } from '../lib/prisma'
 
-export const updatePaymentSession = async (
-  orderId: string,
-  sessionId: string
-) => {
+export const updateSession = async (orderId: string, sessionId: string) => {
   await prisma.payment.update({
     where: { orderId },
     data: {
@@ -12,10 +9,7 @@ export const updatePaymentSession = async (
   })
 }
 
-export const updatePaymentToRefundedByOrderId = async (
-  orderId: string,
-  providerRefundId: string
-) => {
+export const markAsRefundedByOrderId = async (orderId: string, providerRefundId: string) => {
   await prisma.payment.update({
     where: { orderId },
     data: {
@@ -25,10 +19,17 @@ export const updatePaymentToRefundedByOrderId = async (
   })
 }
 
-export const confirmPaymentSuccess = async (
-  orderId: string,
-  paymentIntentId: string
-) => {
+export const markAsRefundedById = async (id: string, providerRefundId: string) => {
+  await prisma.payment.update({
+    where: { id },
+    data: {
+      status: 'REFUNDED',
+      providerRefundId
+    }
+  })
+}
+
+export const confirmSuccess = async (orderId: string, paymentIntentId: string) => {
   return await prisma.$transaction([
     prisma.order.update({
       where: { id: orderId },
@@ -44,18 +45,8 @@ export const confirmPaymentSuccess = async (
   ])
 }
 
-export const getPaymentByProviderId = async (providerPaymentId: string) => {
+export const findByProviderId = async (providerPaymentId: string) => {
   return await prisma.payment.findFirst({
     where: { providerPaymentId }
-  })
-}
-
-export const updatePaymentToRefundedById = async (id: string, providerRefundId: string) => {
-  await prisma.payment.update({
-    where: { id },
-    data: {
-      status: 'REFUNDED',
-      providerRefundId
-    }
   })
 }

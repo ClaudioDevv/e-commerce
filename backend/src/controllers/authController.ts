@@ -1,33 +1,33 @@
 import { Request, Response, NextFunction } from 'express'
-import { comparePassword, generateAccessToken, generateRefreshToken, hashPassword, calculateExpiry, verifyRefreshToken } from '../services/authService'
+import * as AuthService from '../services/authService'
 import config from '../config/config'
 import { AppError } from '../utils/AppError'
 import { setAccessTokenCookie, setRefreshTokenCookie, clearAuthCookie } from '../utils/cookies'
-import * as userModel from '../models/user'
-import * as refreshTokenModel from '../models/refreshToken'
+import * as UserModel from '../models/user'
+import * as RefreshTokenModel from '../models/refreshToken'
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password, name, surname, phone } = req.body
 
-    const existingEmail = await userModel.findUserByEmail(email)
+    const existingEmail = await UserModel.findUserByEmail(email)
     if (existingEmail) throw new AppError('El usuario ya existe', 409)
 
-    const existingPhone = await userModel.findUserByPhone(phone)
+    const existingPhone = await UserModel.findUserByPhone(phone)
     if (existingPhone) throw new AppError('Teléfono ya registrado', 409)
 
-    const hashedPassword = await hashPassword(password)
+    const hashedPassword = await AuthService.hashPassword(password)
 
-    const user = await userModel.createUser({ email, password: hashedPassword, name, surname, phone })
+    const user = await UserModel.createUser({ email, password: hashedPassword, name, surname, phone })
     const { password: _, ...publicUser } = user
 
-    const accessToken = generateAccessToken(user.id, user.role)
-    const refreshToken = generateRefreshToken(user.id)
+    const accessToken = AuthService.generateAccessToken(user.id, user.role)
+    const refreshToken = AuthService.generateRefreshToken(user.id)
 
-    const expireAt = calculateExpiry(config.jwt.refreshTokenExpiry)
+    const expireAt = AuthService.calculateExpiry(config.jwt.refreshTokenExpiry)
     const deviceInfo = req.headers['user-agent'] || 'Unknown'
 
-    refreshTokenModel.saveRefreshToken(user.id, refreshToken, expireAt, deviceInfo)
+    RefreshTokenModel.save(user.id, refreshToken, expireAt, deviceInfo)
 
     setAccessTokenCookie(res, accessToken)
     setRefreshTokenCookie(res, refreshToken)
@@ -49,19 +49,19 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const { email, password } = req.body
 
-    const user = await userModel.findUserByEmail(email)
+    const user = await UserModel.findUserByEmail(email)
     if (!user) throw new AppError('Usuario no existe o desactivado', 401)
 
-    const isValid = await comparePassword(password, user.password)
+    const isValid = await AuthService.comparePassword(password, user.password)
     if (!isValid) throw new AppError('Contraseña incorrecta', 401)
 
-    const accessToken = generateAccessToken(user.id, user.role)
-    const refreshToken = generateRefreshToken(user.id)
+    const accessToken = AuthService.generateAccessToken(user.id, user.role)
+    const refreshToken = AuthService.generateRefreshToken(user.id)
 
-    const expireAt = calculateExpiry(config.jwt.refreshTokenExpiry)
+    const expireAt = AuthService.calculateExpiry(config.jwt.refreshTokenExpiry)
     const deviceInfo = req.headers['user-agent'] || 'Unknown'
 
-    refreshTokenModel.saveRefreshToken(user.id, refreshToken, expireAt, deviceInfo)
+    RefreshTokenModel.save(user.id, refreshToken, expireAt, deviceInfo)
 
     setAccessTokenCookie(res, accessToken)
     setRefreshTokenCookie(res, refreshToken)
@@ -89,18 +89,18 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       throw new AppError('No existe Refresh Token', 401)
     }
 
-    const decoded = verifyRefreshToken(oldRefreshToken)
+    const decoded = AuthService.verifyRefreshToken(oldRefreshToken)
 
-    const tokenRecord = await refreshTokenModel.findRefreshToken(oldRefreshToken)
+    const tokenRecord = await RefreshTokenModel.findByToken(oldRefreshToken)
 
     if (!tokenRecord) {
-      await refreshTokenModel.deleteAllUserRefreshToken(decoded.userId)
+      await RefreshTokenModel.deleteAllByUser(decoded.userId)
       throw new AppError('Refresh token inválido o ya usado, Por seguridad cerramos las sesiones', 401)
     }
 
     const date = new Date()
     if (tokenRecord.expiresAt < date) {
-      await refreshTokenModel.deleteRefreshToken(oldRefreshToken)
+      await RefreshTokenModel.deleteByToken(oldRefreshToken)
       throw new AppError('Refresh token expirado', 401)
     }
 
@@ -110,14 +110,14 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       throw new AppError('Usuario no encontrado o inactivo', 401)
     }
 
-    await refreshTokenModel.deleteRefreshToken(oldRefreshToken)
+    await RefreshTokenModel.deleteByToken(oldRefreshToken)
 
-    const newAccessToken = generateAccessToken(user.id, user.role)
-    const newRefreshToken = generateRefreshToken(user.id)
+    const newAccessToken = AuthService.generateAccessToken(user.id, user.role)
+    const newRefreshToken = AuthService.generateRefreshToken(user.id)
 
-    const newExpireAt = calculateExpiry(config.jwt.refreshTokenExpiry)
+    const newExpireAt = AuthService.calculateExpiry(config.jwt.refreshTokenExpiry)
 
-    await refreshTokenModel.saveRefreshToken(
+    await RefreshTokenModel.save(
       user.id,
       newRefreshToken,
       newExpireAt,
@@ -145,7 +145,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
       throw new AppError('No autenticado', 401)
     }
 
-    const user = await userModel.findUserById(req.user.id)
+    const user = await UserModel.findUserById(req.user.id)
 
     if (!user) {
       throw new AppError('Usuario no encontrado', 404)
@@ -166,7 +166,7 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
   try {
     const refreshToken = req.cookies.refresh_token
     if (refreshToken) {
-      await refreshTokenModel.deleteRefreshToken(refreshToken)
+      await RefreshTokenModel.deleteByToken(refreshToken)
     }
 
     clearAuthCookie(res)
