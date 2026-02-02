@@ -24,6 +24,38 @@ export const findOrderById = async (id: string) => {
   })
 }
 
+type FindOrderForStripeParams = {
+  orderId: string
+  userId?: string
+}
+
+export const findOrderForStripe = async ({ orderId, userId }: FindOrderForStripeParams) => {
+  const where = userId
+    ? { id: orderId, userId }
+    : { id: orderId, isGuest: true }
+
+  return prisma.order.findUnique({
+    where,
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      deliveryFee: true,
+      payment: {
+        select: {
+          provider: true
+        }
+      },
+      items: {
+        select: {
+          nameSnapshot: true,
+          unitPrice: true,
+          quantity: true
+        }
+      }
+    }
+  })
+}
 export const findGuestOrder = async (id: string) => {
   return prisma.order.findUnique({
     where: {
@@ -32,7 +64,8 @@ export const findGuestOrder = async (id: string) => {
     },
     include: {
       items: true,
-      payment: true
+      payment: true,
+      address: true
     }
   })
 }
