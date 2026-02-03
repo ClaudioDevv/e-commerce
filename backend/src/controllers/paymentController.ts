@@ -108,6 +108,13 @@ export const webhook = async (req: Request, res: Response) => {
     res.status(200).json({ received: true })
   } catch (error) {
     console.error('Error en webhook:', error)
-    return res.status(400).json({ error: 'Webhook inválido' })
+
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        error: error.message
+      })
+    }
+
+    return res.status(200).json({ received: true })
   }
 }

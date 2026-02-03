@@ -3,7 +3,7 @@ import { AppError } from '../utils/AppError'
 import { stripe } from '../config/stripe'
 import { Prisma } from '../generated/prisma'
 
-type OrderForStripeCheckout = {
+export type OrderForStripeCheckout = {
   id: string
   userId: string | null
   status: string
