@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { enrichGuestItems, validateProducts } from '../services/orderService'
+import { enrichAndValidateGuestItems, validateProducts } from '../services/orderService'
 import { AppError } from '../utils/AppError'
 import { calculateCartItemPrice } from '../utils/priceCalculator'
 import { OrderGuestInput, OrderUserInput } from '../validators/orderValidator'
@@ -205,10 +205,7 @@ export const expireOrder = async (orderId: string) => {
 
 export const createOrderGuest = async (data: OrderGuestInput['body']) => {
   // Enriquecer datos
-  const enrichedItems = await enrichGuestItems(data.items)
-
-  // Validar productos
-  await validateProducts(data.items)
+  const enrichedItems = await enrichAndValidateGuestItems(data.items)
 
   // Obtener configuración
   const settings = await prisma.settings.findFirst()
