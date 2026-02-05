@@ -5,6 +5,7 @@ import { AppError } from '../utils/AppError'
 import { setAccessTokenCookie, setRefreshTokenCookie, clearAuthCookie } from '../utils/cookies'
 import * as UserModel from '../models/user'
 import * as RefreshTokenModel from '../models/refreshToken'
+import { logger } from '../config/logger'
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -31,6 +32,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     setAccessTokenCookie(res, accessToken)
     setRefreshTokenCookie(res, refreshToken)
+
+    logger.info('User registered', {
+      userId: user.id,
+      email: user.email
+    })
 
     res.status(201).json({
       success: true,
@@ -67,6 +73,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     setRefreshTokenCookie(res, refreshToken)
 
     const { password: _, ...publicUser } = user
+
+    logger.info('User logged in', {
+      userId: user.id,
+      email: user.email
+    })
 
     res.status(200).json({
       success: true,

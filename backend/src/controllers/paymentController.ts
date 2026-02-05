@@ -4,6 +4,7 @@ import type Stripe from 'stripe'
 import { AppError } from '../utils/AppError'
 import * as OrderModel from '../models/order'
 import * as PaymentModel from '../models/payment'
+import { logger } from '../config/logger'
 
 export const webhook = async (req: Request, res: Response) => {
   try {
@@ -28,7 +29,7 @@ export const webhook = async (req: Request, res: Response) => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid webhook signature'
 
-      console.error('Firma de webhook inválida:', message)
+      logger.error('Invalid webhook signature', { message })
       return res.status(400).send(`Webhook Error: ${message}`)
     }
 
@@ -41,25 +42,29 @@ export const webhook = async (req: Request, res: Response) => {
         const orderId = session.metadata?.orderId
 
         if (!orderId) {
-          console.error('Sesión sin orderId en metadata')
+          logger.error('Webhook session missing orderId')
           return res.status(400).json({ error: 'Missing orderId' })
         }
 
         const order = await OrderModel.findOrderById(orderId)
 
         if (!order) {
-          console.error(`Pedido ${orderId} no encontrado`)
+          logger.error('Order not found in webhook', { orderId })
           return res.status(404).json({ error: 'Order not found' })
         }
 
         if (order.status === 'PAID') {
-          console.log(`Pedido ${orderId} ya estaba marcado como PAID`)
           return res.status(200).json({ received: true })
         }
 
         await PaymentModel.confirmSuccess(orderId, session.payment_intent as string)
 
-        console.log(`Pedido ${orderId} marcado como PAID`)
+        logger.info('Payment succeeded', {
+          orderId,
+          paymentIntent: session.payment_intent,
+          amount: session.amount_total
+        })
+
         break
       }
 
@@ -69,7 +74,7 @@ export const webhook = async (req: Request, res: Response) => {
 
         if (orderId) {
           await OrderModel.expireOrder(orderId)
-          console.log(`Sesión expirada para pedido ${orderId}`)
+          logger.warn('Checkout session expired', { orderId })
         }
         break
       }
@@ -88,7 +93,11 @@ export const webhook = async (req: Request, res: Response) => {
               await PaymentModel.markAsRefundedById(payment.id, refundId)
             }
 
-            console.log(`Reembolso confirmado para payment_intent ${paymentIntentId}`)
+            logger.info('Payment refunded', {
+              paymentIntentId,
+              refundId,
+              orderId: payment.orderId
+            })
           }
         }
         break
@@ -98,7 +107,7 @@ export const webhook = async (req: Request, res: Response) => {
         const refund = event.data.object as Stripe.Refund
 
         if (refund.status === 'failed') {
-          console.log(`Reembolso fallido: ${refund.id}`)
+          logger.error('Refund failed', { refundId: refund.id })
         }
         break
       }
@@ -107,8 +116,6 @@ export const webhook = async (req: Request, res: Response) => {
     // siempre responder con 200
     res.status(200).json({ received: true })
   } catch (error) {
-    console.error('Error en webhook:', error)
-
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({
         error: error.message

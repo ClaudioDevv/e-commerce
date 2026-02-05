@@ -37,12 +37,14 @@ export const validateProducts = async (items: (CartItem | GuestOrderItem)[]) => 
     }
   })
 
-  const ingredients = await prisma.ingredient.findMany({
-    where: {
-      id: { in: [...ingredientsIds] },
-      available: true
-    }
-  })
+  const ingredients = ingredientsIds.size > 0
+    ? await prisma.ingredient.findMany({
+      where: {
+        id: { in: [...ingredientsIds] },
+        available: true
+      }
+    })
+    : []
 
   const availableIngredientIds = new Set(ingredients.map(ing => ing.id))
 
@@ -122,12 +124,14 @@ export const enrichAndValidateGuestItems = async (items: GuestOrderItem[]) => {
     }
   })
 
-  const ingredients = await prisma.ingredient.findMany({
-    where: {
-      id: { in: [...ingredientsIds] },
-      available: true
-    }
-  })
+  const ingredients = ingredientsIds.size > 0
+    ? await prisma.ingredient.findMany({
+      where: {
+        id: { in: [...ingredientsIds] },
+        available: true
+      }
+    })
+    : []
 
   for (const item of items) {
     const product = products.find(prod => prod.id === item.productId)

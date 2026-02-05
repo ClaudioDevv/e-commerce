@@ -7,6 +7,7 @@ import { getAddressById } from './address'
 import { deleteCart, getCartByUserId } from './cart'
 import { findUserById } from './user'
 import { prisma } from '../lib/prisma'
+import { logger } from '../config/logger'
 
 // Interfaz para filtros
 interface OrderFilters {
@@ -53,19 +54,6 @@ export const findOrderForStripe = async ({ orderId, userId }: FindOrderForStripe
           quantity: true
         }
       }
-    }
-  })
-}
-export const findGuestOrder = async (id: string) => {
-  return prisma.order.findUnique({
-    where: {
-      id,
-      isGuest: true
-    },
-    include: {
-      items: true,
-      payment: true,
-      address: true
     }
   })
 }
@@ -335,6 +323,14 @@ export const createOrderGuest = async (data: OrderGuestInput['body']) => {
       }
     })
 
+    logger.info('Order created', {
+      orderId: order.id,
+      total: order.total.toString(),
+      deliveryType: order.deliveryType,
+      isGuest: true,
+      customerPhone: order.customerPhone
+    })
+
     // No hay carrito que vaciar
 
     return newOrder
@@ -513,6 +509,14 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
     await deleteCart(userId)
 
     return newOrder
+  })
+
+  logger.info('Order created', {
+    orderId: order.id,
+    userId: order.userId,
+    total: order.total.toString(),
+    deliveryType: order.deliveryType,
+    isGuest: false
   })
 
   // Devolver pedido completo

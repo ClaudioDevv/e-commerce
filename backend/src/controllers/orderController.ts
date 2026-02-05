@@ -69,9 +69,7 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
           await PaymentModel.markAsRefundedByOrderId(order.id, refund.id)
 
           refundProcessed = true
-          console.log(`Reembolso creado para pedido ${order.id}: ${refund.id}`)
         } catch (stripeError) {
-          console.error('Error al crear reembolso en Stripe:', stripeError)
           throw new AppError('Pedido cancelado pero hubo un error al procesar el reembolso. Contacta con soporte.', 500)
         }
       }

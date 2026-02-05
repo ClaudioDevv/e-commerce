@@ -5,7 +5,7 @@ import { validateProducts } from '../../../src/services/orderService'
 jest.mock('../../../src/lib/prisma', () => ({
   prisma: {
     product: {
-      findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     ingredient: {
       findMany: jest.fn(),
@@ -18,127 +18,196 @@ describe('validateProducts', () => {
     jest.clearAllMocks()
   })
 
-  test('Producto no existente, AppError 404', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    findUniqueMock.mockResolvedValue(null)
+  test('Producto no existente → AppError 404', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([])
 
-    const items = [{ productId: 'id-no-existente', quantity: 1 }] as CartItem []
+    const items = [
+      { productId: 'id-no-existente', quantity: 1 }
+    ] as CartItem[]
 
-    await expect(validateProducts(items)).rejects.toThrow('Producto no disponible')
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Producto no disponible')
   })
 
-  test('Producto inactivo, AppError 404', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    findUniqueMock.mockResolvedValue({ active: false })
+  test('Producto inactivo → AppError 404', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: false,
+        name: 'Pizza',
+        variants: []
+      }
+    ])
 
-    const items = [{ productId: 'id-de-producto-inactivo', quantity: 1 }] as CartItem []
+    const items = [
+      { productId: '123', quantity: 1 }
+    ] as CartItem[]
 
-    await expect(validateProducts(items)).rejects.toThrow('Producto no disponible')
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Producto no disponible')
   })
 
-  test('Variante inválida, AppError 400', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    const mockProduct = {
-      id: '123',
-      active: true,
-      name: 'Pizza Carbonara',
-      variants: [{ id: 'v1', active: true }]
-    }
-    findUniqueMock.mockResolvedValue(mockProduct)
+  test('Variante inválida → AppError 400', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: true,
+        name: 'Pizza Carbonara',
+        category: 'PIZZA',
+        variants: [{ id: 'v1', active: true }],
+        pizzaConfig: { allowCustomization: true }
+      }
+    ])
 
-    const items = [{ productId: '123', variantId: 'id-inexistente', quantity: 1 }] as CartItem []
+    const items = [
+      {
+        productId: '123',
+        variantId: 'v-inexistente',
+        quantity: 1
+      }
+    ] as CartItem[]
 
-    await expect(validateProducts(items)).rejects.toThrow('Tamaño no válido para Pizza Carbonara')
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Tamaño no válido para Pizza Carbonara')
   })
 
-  test('Producto sin personalización, AppError 400', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    const mockProduct = {
-      id: '123',
-      active: true,
-      name: 'Cola',
-      category: 'Bebida',
-      variants: [{ id: 'v1', active: true }]
-    }
-    findUniqueMock.mockResolvedValue(mockProduct)
+  test('Producto con variantes pero sin variantId → AppError 400', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: true,
+        name: 'Pizza Carbonara',
+        category: 'PIZZA',
+        variants: [{ id: 'v1', active: true }],
+        pizzaConfig: { allowCustomization: true }
+      }
+    ])
 
-    const items = [{
-      productId: '123',
-      variantId: 'v1',
-      quantity: 1,
-      customIngredients: [{ ingredientId: 1, action: 'ADD' }]
-    }] as any
+    const items = [
+      {
+        productId: '123',
+        quantity: 1
+      }
+    ] as CartItem[]
 
-    await expect(validateProducts(items)).rejects.toThrow('Cola no permite personalización')
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Debes seleccionar un tamaño para Pizza Carbonara')
   })
 
-  test('Pizza sin personalización activada, AppError 400', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    const mockProduct = {
-      id: '123',
-      active: true,
-      name: 'Pizza Carbonara',
-      category: 'PIZZA',
-      variants: [{ id: 'v1', active: true }]
-    }
-    findUniqueMock.mockResolvedValue(mockProduct)
+  test('Producto no permite personalización → AppError 400', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: true,
+        name: 'Cola',
+        category: 'BEBIDA',
+        variants: [{ id: 'v1', active: true }]
+      }
+    ])
 
-    const items = [{
-      productId: '123',
-      variantId: 'v1',
-      quantity: 1,
-      customIngredients: [{ ingredientId: 1, action: 'ADD' }]
-    }] as any
+    ;(prisma.ingredient.findMany as jest.Mock).mockResolvedValue([])
 
-    await expect(validateProducts(items)).rejects.toThrow('Pizza Carbonara no permite personalización')
+    const items = [
+      {
+        productId: '123',
+        variantId: 'v1',
+        quantity: 1,
+        customIngredients: [{ ingredientId: 1, action: 'ADD' }]
+      }
+    ] as any
+
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Cola no permite personalización')
   })
 
-  test('Ingrediente no disponible, AppError 400', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    const mockProduct = {
-      id: '123',
-      active: true,
-      name: 'Pizza Carbonara',
-      category: 'PIZZA',
-      variants: [{ id: 'v1', active: true }],
-      pizzaConfig: { allowCustomization: true }
-    }
-    findUniqueMock.mockResolvedValue(mockProduct)
+  test('Pizza sin personalización activada → AppError 400', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: true,
+        name: 'Pizza Carbonara',
+        category: 'PIZZA',
+        variants: [{ id: 'v1', active: true }],
+        pizzaConfig: { allowCustomization: false }
+      }
+    ])
 
-    const items = [{
-      productId: '123',
-      variantId: 'v1',
-      quantity: 1,
-      customIngredients: [{ ingredientId: 99, action: 'ADD' }]
-    }] as any
-    const findManyMock = prisma.ingredient.findMany as jest.Mock
-    findManyMock.mockResolvedValue([])
+    ;(prisma.ingredient.findMany as jest.Mock).mockResolvedValue([])
 
-    await expect(validateProducts(items)).rejects.toThrow('Algún ingrediente seleccionado en Pizza Carbonara no está disponible')
+    const items = [
+      {
+        productId: '123',
+        variantId: 'v1',
+        quantity: 1,
+        customIngredients: [{ ingredientId: 1, action: 'ADD' }]
+      }
+    ] as any
+
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Pizza Carbonara no permite personalización')
+  })
+
+  test('Ingrediente no disponible → AppError 400', async () => {
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: true,
+        name: 'Pizza Carbonara',
+        category: 'PIZZA',
+        variants: [{ id: 'v1', active: true }],
+        pizzaConfig: { allowCustomization: true }
+      }
+    ])
+
+    ;(prisma.ingredient.findMany as jest.Mock).mockResolvedValue([])
+
+    const items = [
+      {
+        productId: '123',
+        variantId: 'v1',
+        quantity: 1,
+        customIngredients: [{ ingredientId: 99, action: 'ADD' }]
+      }
+    ] as any
+
+    await expect(validateProducts(items))
+      .rejects
+      .toThrow('Algún ingrediente seleccionado en Pizza Carbonara no está disponible')
   })
 
   test('Funcionamiento correcto', async () => {
-    const findUniqueMock = prisma.product.findUnique as jest.Mock
-    const findManyMock = prisma.ingredient.findMany as jest.Mock
+    (prisma.product.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: '123',
+        active: true,
+        name: 'Pizza Carbonara',
+        category: 'PIZZA',
+        variants: [{ id: 'v1', active: true }],
+        pizzaConfig: { allowCustomization: true }
+      }
+    ])
 
-    findUniqueMock.mockResolvedValue({
-      id: '123',
-      active: true,
-      name: 'Pizza Carbonara',
-      category: 'PIZZA',
-      variants: [{ id: 'v1', active: true }],
-      pizzaConfig: { allowCustomization: true }
-    })
+    ;(prisma.ingredient.findMany as jest.Mock).mockResolvedValue([
+      { id: 99, available: true }
+    ])
 
-    findManyMock.mockResolvedValue([{ id: 99, available: true }])
+    const items = [
+      {
+        productId: '123',
+        variantId: 'v1',
+        quantity: 1,
+        customIngredients: [{ ingredientId: 99, action: 'ADD' }]
+      }
+    ] as any
 
-    const items = [{
-      productId: '123',
-      variantId: 'v1',
-      quantity: 1,
-      customIngredients: [{ ingredientId: 99, action: 'ADD' }]
-    }] as any
-
-    await expect(validateProducts(items)).resolves.not.toThrow()
+    await expect(validateProducts(items))
+      .resolves
+      .not.toThrow()
   })
 })

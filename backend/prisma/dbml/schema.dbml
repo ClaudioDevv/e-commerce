@@ -202,7 +202,7 @@ Table Payment {
 }
 
 Table Settings {
-  id String [pk]
+  id String [pk, default: 'singleton']
   openTime String [not null]
   closeTime String [not null]
   breakStart String

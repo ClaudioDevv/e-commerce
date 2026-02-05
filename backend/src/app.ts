@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './docs/swagger'
 import { corsOptions } from './config/cors'
 import { errorHandler } from './middlewares/errorHandler'
+import { logHttpRequest } from './middlewares/httpLogger'
 import routes from './routes/index'
 import paymentRoutes from './routes/paymentRoutes'
 import * as RateLimiter from './middlewares/rateLimiter'
@@ -19,12 +20,15 @@ app.disable('x-powered-by')
 
 // Rate Limiting
 app.use(RateLimiter.generalLimiter)
-
 app.use('/api/auth/login', RateLimiter.authLimiter)
 app.use('/api/auth/register', RateLimiter.registerLimiter)
-app.use('/api/orders/*/checkout', RateLimiter.paymentLimiter)
-app.use('/api/orders/guest/*/checkout', RateLimiter.paymentLimiter)
+app.use('/api/orders/:id/checkout', RateLimiter.paymentLimiter)
+app.use('/api/orders/guest/:id/checkout', RateLimiter.paymentLimiter)
 
+// Logger http
+app.use(logHttpRequest)
+
+// Webhook stripe texto plano
 app.use('/api/payments', paymentRoutes)
 
 app.use(express.json({ limit: '10mb' }))
