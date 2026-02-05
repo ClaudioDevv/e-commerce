@@ -85,16 +85,21 @@ model Product {
   name        String
   description String?
   category    Category
+  subcategory String?
   basePrice   Decimal          @db.Decimal(10,2)  
   imageUrl    String?
   active      Boolean          @default(true)
+
+  allowCustomization Boolean   @default(false)
+  
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  variants    ProductVariant[]
-  pizzaConfig PizzaConfig?     // Solo pizzas tienen configuración
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
+  variants              ProductVariant[]
+  baseCustomizables     ProductBaseCustomizable[]  // Ingredientes/componentes base
+  availableCustomizables ProductAvailableCustomizable[] // Qué se puede añadir/quitar
+  cartItems             CartItem[]
+  orderItems            OrderItem[]
 
   @@index([category])
   @@index([active])
@@ -102,9 +107,11 @@ model Product {
 
 enum Category {
   PIZZA
+  BURGER
   BEBIDA
   ENTRANTE
   POSTRE
+  ENSALADA
 }
 
 model ProductVariant {
@@ -121,33 +128,28 @@ model ProductVariant {
   @@index([productId])
 }
 
-// ==================== PIZZAS E INGREDIENTES ====================
+// ==================== SISTEMA DE PERSONALIZACIÓN GENÉRICO ====================
 
-model PizzaConfig {
-  id                 String                @id @default(uuid())
-  product            Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId          String                @unique
-  allowCustomization Boolean               @default(true)
-  baseIngredients    PizzaBaseIngredient[]  // Ingredientes por defecto
-}
-
-model Ingredient {
+model Customizable {
   id         Int                   @id @default(autoincrement())
   name       String                @unique
   extraPrice Decimal               @db.Decimal(10,2)
   available  Boolean               @default(true)
-  category   IngredientCategory?
+  category   CustomizableCategory?
   imageUrl   String?
   createdAt  DateTime              @default(now())
 
-  pizzaBase     PizzaBaseIngredient[]
-  cartCustom    CartItemIngredient[]
-  orderCustom   OrderItemIngredient[]
+  // Relaciones
+  productBase       ProductBaseCustomizable[]
+  productAvailable  ProductAvailableCustomizable[]
+  cartCustom        CartItemCustomization[]
+  orderCustom       OrderItemCustomization[]
 
   @@index([available])
+  @@index([category])
 }
 
-enum IngredientCategory {
+enum CustomizableCategory {
   QUESO
   CARNE
   VEGETAL
@@ -155,14 +157,27 @@ enum IngredientCategory {
   EXTRA
 }
 
-// Ingredientes que vienen por defecto en cada pizza
-model PizzaBaseIngredient {
-  pizzaConfigId String
-  pizzaConfig   PizzaConfig @relation(fields: [pizzaConfigId], references: [id], onDelete: Cascade)
-  ingredientId  Int
-  ingredient    Ingredient  @relation(fields: [ingredientId], references: [id])
+// Elementos que vienen POR DEFECTO en un producto
+model ProductBaseCustomizable {
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customizableId Int
+  customizable   Customizable @relation(fields: [customizableId], references: [id])
+  isRemovable    Boolean      @default(true) // ¿Se puede quitar?
 
-  @@id([pizzaConfigId, ingredientId])
+  @@id([productId, customizableId])
+  @@index([productId])
+}
+
+// Elementos que SE PUEDEN AÑADIR a un producto (extras)
+model ProductAvailableCustomizable {
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customizableId Int
+  customizable   Customizable @relation(fields: [customizableId], references: [id])
+
+  @@id([productId, customizableId])
+  @@index([productId])
 }
 
 // ==================== CARRITO ====================
@@ -180,24 +195,25 @@ model CartItem {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  customIngredients CartItemIngredient[]  // Personalizaciones de pizza
+  customizations CartItemCustomization[]
 
   @@index([userId])
   @@index([productId])
 }
 
-// Ingredientes personalizados en el carrito (solo para pizzas)
-model CartItemIngredient {
-  cartItemId   String
-  cartItem     CartItem   @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
-  ingredientId Int
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-  action       IngredientAction  // ADD = añadir extra, REMOVE = quitar base
+// Personalizaciones en el carrito
+model CartItemCustomization {
+  cartItemId     String
+  cartItem       CartItem     @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  customizableId Int
+  customizable   Customizable @relation(fields: [customizableId], references: [id])
+  action         CustomizationAction
 
-  @@id([cartItemId, ingredientId, action])
+  @@id([cartItemId, customizableId, action])
+  @@index([cartItemId])
 }
 
-enum IngredientAction {
+enum CustomizationAction {
   ADD
   REMOVE
 }
@@ -210,7 +226,7 @@ model Order {
   userId   String?
   isGuest  Boolean @default(false)
 
-  // Datos de contacto (obligatorios siempre que sea guest) de un usuario ya tendremos esos datos
+  // Datos de contacto (obligatorios siempre que sea guest)
   customerName  String
   customerPhone String
 
@@ -265,7 +281,7 @@ model OrderItem {
   variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   variantId String?
 
-  // Snapshots para historial (por si cambian precios/nombres)
+  // Snapshots para historial
   nameSnapshot    String
   variantSnapshot String?
   notesSnapshot   String?
@@ -273,28 +289,29 @@ model OrderItem {
   quantity        Int
   subtotal        Decimal   @db.Decimal(10,2)
 
-  customIngredients OrderItemIngredient[]  // Snapshot de personalizaciones
+  customizations OrderItemCustomization[]
 
   @@index([orderId])
 }
 
-// Snapshot de ingredientes personalizados en el pedido
-model OrderItemIngredient {
-  orderItemId   String
-  orderItem     OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-  ingredientId  Int
-  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
-  action        IngredientAction
-  priceSnapshot Decimal   @db.Decimal(10,2)
+// Snapshot de personalizaciones en el pedido
+model OrderItemCustomization {
+  orderItemId    String
+  orderItem      OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  customizableId Int
+  customizable   Customizable @relation(fields: [customizableId], references: [id])
+  action         CustomizationAction
+  nameSnapshot   String       // Guardamos el nombre por si se borra el customizable
+  priceSnapshot  Decimal      @db.Decimal(10,2)
 
-  @@id([orderItemId, ingredientId, action])
+  @@id([orderItemId, customizableId, action])
+  @@index([orderItemId])
 }
 
 enum OrderStatus {
   PENDING    // Recibido, esperando pago/confirmación
   PAID       // Pagado
   CONFIRMED  // Confirmado por la pizzería
-  PREPARING  // En cocina
   READY      // Listo para recoger/enviar
   ON_THE_WAY // En camino (solo DELIVERY)
   DELIVERED  // Entregado/Recogido
@@ -314,36 +331,12 @@ model Payment {
   amount            Float
   currency          String          @default("EUR")
   status            PaymentStatus   @default(PENDING)
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   @@index([providerPaymentId])
   @@index([status])
-}
-
-model Settings {
-  id             String    @id @default("singleton")
-
-  // Horarios (usamos texto porque TIME es incómodo en JS/TS)
-  openTime       String    // Ej: "12:00"
-  closeTime      String    // Ej: "23:30"
-
-  // Opcional: descanso/siesta
-  breakStart     String?   // Ej: "16:00"
-  breakEnd       String?   // Ej: "19:00"
-
-  // Configuración pedidos
-  deliveryFee    Decimal   @db.Decimal(10,2) @default(0.00)
-  minOrderAmount Decimal   @db.Decimal(10,2) @default(0.00)
-  avgPrepMinutes Int       @default(30)
-  autoAcceptOrders Boolean @default(true)
-
-  // Control de estado del negocio
-  temporarilyClosed Boolean @default(false) // útil para cierres rápidos
-  statusMessage      String?               // Ej: "Cerrado por mantenimiento"
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 }
 
 enum PaymentProvider {
@@ -357,4 +350,68 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   REFUNDED
+}
+
+// ==================== CONFIGURACIÓN DEL NEGOCIO ====================
+
+model Settings {
+  id             String    @id @default("singleton")
+
+  // Configuración pedidos
+  deliveryFee    Decimal   @db.Decimal(10,2) @default(0.00)
+  minOrderAmount Decimal   @db.Decimal(10,2) @default(0.00)
+  avgPrepMinutes Int       @default(30)
+  autoAcceptOrders Boolean @default(true)
+
+  // Control de estado del negocio
+  temporarilyClosed Boolean @default(false)
+  statusMessage     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Sistema de horarios flexible
+model BusinessHours {
+  id          String      @id @default(uuid())
+  dayOfWeek   DayOfWeek   // Lunes, Martes, etc.
+  openTime    String      // "13:00"
+  closeTime   String      // "16:00"
+  isClosed    Boolean     @default(false)  // Día cerrado completamente
+  order       Int         // Para ordenar múltiples franjas del mismo día
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([dayOfWeek, order])
+  @@index([dayOfWeek])
+  @@index([isClosed])
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// NUEVO: Para horarios especiales (festivos, eventos, etc.)
+model SpecialHours {
+  id          String    @id @default(uuid())
+  date        DateTime  @db.Date  // Día específico
+  reason      String?   // "Navidad", "Evento especial", etc.
+  isClosed    Boolean   @default(false)  // Si está cerrado ese día
+  
+  // Si está abierto, horarios específicos
+  openTime    String?   // "13:00"
+  closeTime   String?   // "23:30"
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([date])
+  @@index([date])
 }

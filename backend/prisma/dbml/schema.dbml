@@ -49,13 +49,16 @@ Table Product {
   name String [not null]
   description String
   category Category [not null]
+  subcategory String
   basePrice Decimal [not null]
   imageUrl String
   active Boolean [not null, default: true]
+  allowCustomization Boolean [not null, default: false]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   variants ProductVariant [not null]
-  pizzaConfig PizzaConfig
+  baseCustomizables ProductBaseCustomizable [not null]
+  availableCustomizables ProductAvailableCustomizable [not null]
   cartItems CartItem [not null]
   orderItems OrderItem [not null]
 }
@@ -71,35 +74,40 @@ Table ProductVariant {
   orderItems OrderItem [not null]
 }
 
-Table PizzaConfig {
-  id String [pk]
-  product Product [not null]
-  productId String [unique, not null]
-  allowCustomization Boolean [not null, default: true]
-  baseIngredients PizzaBaseIngredient [not null]
-}
-
-Table Ingredient {
+Table Customizable {
   id Int [pk, increment]
   name String [unique, not null]
   extraPrice Decimal [not null]
   available Boolean [not null, default: true]
-  category IngredientCategory
+  category CustomizableCategory
   imageUrl String
   createdAt DateTime [default: `now()`, not null]
-  pizzaBase PizzaBaseIngredient [not null]
-  cartCustom CartItemIngredient [not null]
-  orderCustom OrderItemIngredient [not null]
+  productBase ProductBaseCustomizable [not null]
+  productAvailable ProductAvailableCustomizable [not null]
+  cartCustom CartItemCustomization [not null]
+  orderCustom OrderItemCustomization [not null]
 }
 
-Table PizzaBaseIngredient {
-  pizzaConfigId String [not null]
-  pizzaConfig PizzaConfig [not null]
-  ingredientId Int [not null]
-  ingredient Ingredient [not null]
+Table ProductBaseCustomizable {
+  productId String [not null]
+  product Product [not null]
+  customizableId Int [not null]
+  customizable Customizable [not null]
+  isRemovable Boolean [not null, default: true]
 
   indexes {
-    (pizzaConfigId, ingredientId) [pk]
+    (productId, customizableId) [pk]
+  }
+}
+
+Table ProductAvailableCustomizable {
+  productId String [not null]
+  product Product [not null]
+  customizableId Int [not null]
+  customizable Customizable [not null]
+
+  indexes {
+    (productId, customizableId) [pk]
   }
 }
 
@@ -115,18 +123,18 @@ Table CartItem {
   notes String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  customIngredients CartItemIngredient [not null]
+  customizations CartItemCustomization [not null]
 }
 
-Table CartItemIngredient {
+Table CartItemCustomization {
   cartItemId String [not null]
   cartItem CartItem [not null]
-  ingredientId Int [not null]
-  ingredient Ingredient [not null]
-  action IngredientAction [not null]
+  customizableId Int [not null]
+  customizable Customizable [not null]
+  action CustomizationAction [not null]
 
   indexes {
-    (cartItemId, ingredientId, action) [pk]
+    (cartItemId, customizableId, action) [pk]
   }
 }
 
@@ -170,19 +178,20 @@ Table OrderItem {
   unitPrice Decimal [not null]
   quantity Int [not null]
   subtotal Decimal [not null]
-  customIngredients OrderItemIngredient [not null]
+  customizations OrderItemCustomization [not null]
 }
 
-Table OrderItemIngredient {
+Table OrderItemCustomization {
   orderItemId String [not null]
   orderItem OrderItem [not null]
-  ingredientId Int [not null]
-  ingredient Ingredient [not null]
-  action IngredientAction [not null]
+  customizableId Int [not null]
+  customizable Customizable [not null]
+  action CustomizationAction [not null]
+  nameSnapshot String [not null]
   priceSnapshot Decimal [not null]
 
   indexes {
-    (orderItemId, ingredientId, action) [pk]
+    (orderItemId, customizableId, action) [pk]
   }
 }
 
@@ -203,16 +212,38 @@ Table Payment {
 
 Table Settings {
   id String [pk, default: 'singleton']
-  openTime String [not null]
-  closeTime String [not null]
-  breakStart String
-  breakEnd String
   deliveryFee Decimal [not null, default: 0]
   minOrderAmount Decimal [not null, default: 0]
   avgPrepMinutes Int [not null, default: 30]
   autoAcceptOrders Boolean [not null, default: true]
   temporarilyClosed Boolean [not null, default: false]
   statusMessage String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table BusinessHours {
+  id String [pk]
+  dayOfWeek DayOfWeek [not null]
+  openTime String [not null]
+  closeTime String [not null]
+  isClosed Boolean [not null, default: false]
+  order Int [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (dayOfWeek, order) [unique]
+  }
+}
+
+Table SpecialHours {
+  id String [pk]
+  date DateTime [unique, not null]
+  reason String
+  isClosed Boolean [not null, default: false]
+  openTime String
+  closeTime String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -225,12 +256,14 @@ Enum UserRole {
 
 Enum Category {
   PIZZA
+  BURGER
   BEBIDA
   ENTRANTE
   POSTRE
+  ENSALADA
 }
 
-Enum IngredientCategory {
+Enum CustomizableCategory {
   QUESO
   CARNE
   VEGETAL
@@ -238,7 +271,7 @@ Enum IngredientCategory {
   EXTRA
 }
 
-Enum IngredientAction {
+Enum CustomizationAction {
   ADD
   REMOVE
 }
@@ -252,7 +285,6 @@ Enum OrderStatus {
   PENDING
   PAID
   CONFIRMED
-  PREPARING
   READY
   ON_THE_WAY
   DELIVERED
@@ -272,17 +304,29 @@ Enum PaymentStatus {
   REFUNDED
 }
 
+Enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 Ref: RefreshToken.userId > User.id [delete: Cascade]
 
 Ref: Address.userId > User.id [delete: Cascade]
 
 Ref: ProductVariant.productId > Product.id [delete: Cascade]
 
-Ref: PizzaConfig.productId - Product.id [delete: Cascade]
+Ref: ProductBaseCustomizable.productId > Product.id [delete: Cascade]
 
-Ref: PizzaBaseIngredient.pizzaConfigId > PizzaConfig.id [delete: Cascade]
+Ref: ProductBaseCustomizable.customizableId > Customizable.id
 
-Ref: PizzaBaseIngredient.ingredientId > Ingredient.id
+Ref: ProductAvailableCustomizable.productId > Product.id [delete: Cascade]
+
+Ref: ProductAvailableCustomizable.customizableId > Customizable.id
 
 Ref: CartItem.userId > User.id [delete: Cascade]
 
@@ -290,9 +334,9 @@ Ref: CartItem.productId > Product.id [delete: Cascade]
 
 Ref: CartItem.variantId > ProductVariant.id [delete: Set Null]
 
-Ref: CartItemIngredient.cartItemId > CartItem.id [delete: Cascade]
+Ref: CartItemCustomization.cartItemId > CartItem.id [delete: Cascade]
 
-Ref: CartItemIngredient.ingredientId > Ingredient.id
+Ref: CartItemCustomization.customizableId > Customizable.id
 
 Ref: Order.userId > User.id [delete: Set Null]
 
@@ -304,8 +348,8 @@ Ref: OrderItem.productId > Product.id
 
 Ref: OrderItem.variantId > ProductVariant.id [delete: Set Null]
 
-Ref: OrderItemIngredient.orderItemId > OrderItem.id [delete: Cascade]
+Ref: OrderItemCustomization.orderItemId > OrderItem.id [delete: Cascade]
 
-Ref: OrderItemIngredient.ingredientId > Ingredient.id
+Ref: OrderItemCustomization.customizableId > Customizable.id
 
 Ref: Payment.orderId - Order.id [delete: Cascade]
