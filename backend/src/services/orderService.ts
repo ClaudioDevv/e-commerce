@@ -10,7 +10,7 @@ const MILLISECONDS_PER_MINUTE = 60000
 const SCHEDULE_INTERVAL_MINUTES = 15
 
 interface TimeSlot {
-  time: string // "HH:MM"
+  time: string
   available: boolean
   estimatedDelivery?: Date
 }
@@ -285,13 +285,13 @@ function formatTime (date: Date): string {
 
 function getDayOfWeek (date: Date): DayOfWeek {
   const days: DayOfWeek[] = [
+    'SUNDAY',
     'MONDAY',
     'TUESDAY',
     'WEDNESDAY',
     'THURSDAY',
     'FRIDAY',
-    'SATURDAY',
-    'SUNDAY'
+    'SATURDAY'
   ]
   return days[date.getDay()]
 }
