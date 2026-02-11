@@ -1,19 +1,22 @@
 import { Decimal } from 'decimal.js'
-import { Product, ProductVariant, Ingredient } from '../generated/prisma'
+
+type HasExtraPrice = {
+  extraPrice: Decimal;
+}
 
 export const calculateCartItemPrice = (
-  product: Product,
-  variant: ProductVariant | null,
-  addedIngredients: Ingredient[]
+  basePrice: Decimal,
+  priceDelta: Decimal | null,
+  addedCustomizables: HasExtraPrice[]
 ): Decimal => {
-  let price = new Decimal(product.basePrice)
+  let price = new Decimal(basePrice)
 
-  if (variant) {
-    price = price.add(variant.priceDelta)
+  if (priceDelta) {
+    price = price.add(priceDelta)
   }
 
-  for (const ingredient of addedIngredients) {
-    price = price.add(ingredient.extraPrice)
+  for (const customizable of addedCustomizables) {
+    price = price.add(customizable.extraPrice)
   }
 
   return price

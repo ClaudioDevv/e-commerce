@@ -301,7 +301,7 @@ model OrderItemCustomization {
   customizableId Int
   customizable   Customizable @relation(fields: [customizableId], references: [id])
   action         CustomizationAction
-  nameSnapshot   String       // Guardamos el nombre por si se borra el customizable
+  nameSnapshot   String
   priceSnapshot  Decimal      @db.Decimal(10,2)
 
   @@id([orderItemId, customizableId, action])

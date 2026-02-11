@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
-import * as productModel from '../models/product'
+import * as ProductModel from '../models/product'
 import { Category } from '../generated/prisma'
 import { AppError } from '../utils/AppError'
 
 export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const products = await productModel.getAll()
+    const products = await ProductModel.getAll()
     res.status(200).json({
       success: true,
       data: products,
@@ -29,7 +29,7 @@ export const getProductsByCategory = async (req: Request, res: Response, next: N
 
     const category = upperCat as Category
 
-    const products = await productModel.getByCategory(category)
+    const products = await ProductModel.getByCategory(category)
     res.status(200).json({
       success: true,
       data: products
@@ -39,11 +39,11 @@ export const getProductsByCategory = async (req: Request, res: Response, next: N
   }
 }
 
-export const getProductByIdentifier = async (req: Request, res: Response, next: NextFunction) => {
+export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params
 
-    const product = await productModel.getById(id)
+    const product = await ProductModel.getById(id)
 
     if (!product) {
       throw new AppError('Producto no encontrado', 404)

@@ -13,6 +13,8 @@ router.post('/guest/:id/checkout', OrderController.payOrderGuestStripe)
 
 router.get('/', authenticate, OrderController.getAllOrders)
 router.get('/:id', authenticate, OrderController.getOrderById)
+router.get('/is-open', OrderController.checkIfOpen)
+router.get('/available-times', OrderController.getAvailableTimeSlots)
 
 router.patch('/:id/cancel', authenticate, OrderController.cancelOrder)
 

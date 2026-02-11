@@ -1,13 +1,12 @@
 import { Decimal } from 'decimal.js'
-import { enrichAndValidateGuestItems, validateProducts } from '../services/orderService'
 import { AppError } from '../utils/AppError'
-import { calculateCartItemPrice } from '../utils/priceCalculator'
-import { OrderGuestInput, OrderUserInput } from '../validators/orderValidator'
-import { getAddressById } from './address'
-import { deleteCart, getCartByUserId } from './cart'
-import { findUserById } from './user'
 import { prisma } from '../lib/prisma'
 import { logger } from '../config/logger'
+import { OrderGuestInput, OrderUserInput } from '../validators/orderValidator'
+import { getCartByUserId, deleteCart } from './cart'
+import { getAddressById } from './address'
+import { findUserById } from './user'
+import * as OrderService from '../services/orderService'
 
 // Interfaz para filtros
 interface OrderFilters {
@@ -18,6 +17,10 @@ interface OrderFilters {
   limit: number
 }
 
+export const getSettings = async () => {
+  return await prisma.settings.findFirst()
+}
+
 export const findOrderById = async (id: string) => {
   return prisma.order.findUnique({
     where: { id },
@@ -25,12 +28,7 @@ export const findOrderById = async (id: string) => {
   })
 }
 
-type FindOrderForStripeParams = {
-  orderId: string
-  userId?: string
-}
-
-export const findOrderForStripe = async ({ orderId, userId }: FindOrderForStripeParams) => {
+export const findOrderForStripe = async (orderId: string, userId?: string) => {
   const where = userId
     ? { id: orderId, userId }
     : { id: orderId, isGuest: true }
@@ -41,10 +39,12 @@ export const findOrderForStripe = async ({ orderId, userId }: FindOrderForStripe
       id: true,
       userId: true,
       status: true,
+      total: true,
       deliveryFee: true,
       payment: {
         select: {
-          provider: true
+          provider: true,
+          status: true
         }
       },
       items: {
@@ -58,11 +58,15 @@ export const findOrderForStripe = async ({ orderId, userId }: FindOrderForStripe
   })
 }
 
-export const getAllOrders = async (userId: string, filters: OrderFilters) => {
+export const getAllOrders = async (userId: string, role: string, filters: OrderFilters) => {
   const { status, dateFrom, dateTo, page, limit } = filters
 
+  const where: any = {}
+
+  if (role === 'CUSTOMER') {
+    where.userId = userId
+  }
   // Construimos el where dinámicamente para aplicar los filtros
-  const where: any = { userId }
 
   if (status) {
     where.status = status
@@ -88,9 +92,9 @@ export const getAllOrders = async (userId: string, filters: OrderFilters) => {
       include: {
         items: {
           include: {
-            customIngredients: {
+            customizations: {
               include: {
-                ingredient: true
+                customizable: true
               }
             }
           }
@@ -131,9 +135,9 @@ export const getOrderById = async (id: string, userId: string, role: string) => 
         include: {
           product: true,
           variant: true,
-          customIngredients: {
+          customizations: {
             include: {
-              ingredient: true
+              customizable: true
             }
           }
         }
@@ -144,7 +148,7 @@ export const getOrderById = async (id: string, userId: string, role: string) => 
   })
 
   if (!order) {
-    throw new AppError('Pedido no existe', 404)
+    throw new AppError('Pedido no encontrado', 404)
   }
 
   return order
@@ -152,10 +156,7 @@ export const getOrderById = async (id: string, userId: string, role: string) => 
 
 export const cancelOrder = async (id: string, userId: string) => {
   const order = await prisma.order.findFirst({
-    where: {
-      id,
-      userId,
-    },
+    where: { id, userId },
     include: {
       payment: true
     }
@@ -178,6 +179,13 @@ export const cancelOrder = async (id: string, userId: string) => {
     data: { status: 'CANCELLED' }
   })
 
+  logger.info('Order cancelled', {
+    orderId: id,
+    userId,
+    previousStatus: order.status,
+    paymentStatus: order.payment?.status
+  })
+
   return {
     order: updatedOrder,
     payment: order.payment
@@ -192,42 +200,22 @@ export const expireOrder = async (orderId: string) => {
 }
 
 export const createOrderGuest = async (data: OrderGuestInput['body']) => {
-  // Enriquecer datos
-  const enrichedItems = await enrichAndValidateGuestItems(data.items)
-
-  // Obtener configuración
+  // Comprobar que esta abierto el establecimiento
   const settings = await prisma.settings.findFirst()
   if (!settings) {
     throw new AppError('Configuración del sistema no encontrada', 500)
   }
 
-  // Calcular subtotal
-  let subtotal = new Decimal(0)
+  await OrderService.checkBusinessStatus(settings)
 
-  const itemsWithPrices = enrichedItems.map(item => {
-    const addedIngredients = item.customIngredients
-      .filter(ci => ci.action === 'ADD')
-      .map(ci => ci.ingredient)
+  // Enriquecer y validar datos
+  const enrichedItems = await OrderService.enrichAndValidateGuestItems(data.items)
 
-    const unitPrice = calculateCartItemPrice(
-      item.product,
-      item.variant,
-      addedIngredients
-    )
+  const { itemsWithPrices, subtotal } = OrderService.calculateSubtotal(enrichedItems)
 
-    const itemSubtotal = unitPrice.mul(item.quantity)
-    subtotal = subtotal.add(itemSubtotal)
-
-    return {
-      ...item,
-      unitPrice,
-      itemSubtotal
-    }
-  })
-
-  // Direccion y deliveryFee
-  let deliveryFee = new Decimal(0)
+  // Calcular deliveryFee y validar direccion
   let deliveryAddress = null
+  let deliveryFee = new Decimal(0)
 
   if (data.deliveryType === 'DELIVERY') {
     if (!data.deliveryAddress) {
@@ -239,24 +227,16 @@ export const createOrderGuest = async (data: OrderGuestInput['body']) => {
 
   const total = subtotal.add(deliveryFee)
 
-  // 7. Validar Horarios
+  // Validar Horarios si está programado
   if (data.scheduledFor) {
-    const scheduledDate = new Date(data.scheduledFor)
-    const now = new Date()
-
-    if (scheduledDate <= now) {
-      throw new AppError('La fecha programada debe ser futura', 400)
-    }
+    await OrderService.validateScheduledTime(new Date(data.scheduledFor), settings)
   }
 
   // Calcular tiempo estimado
-  let estimatedTime = null
-  if (data.scheduledFor) {
-    estimatedTime = new Date(data.scheduledFor)
-  } else {
-    const now = new Date()
-    estimatedTime = new Date(now.getTime() + settings.avgPrepMinutes * 60000)
-  }
+  const estimatedTime = await OrderService.calculateEstimatedTime(
+    settings,
+    data.scheduledFor ? new Date(data.scheduledFor) : undefined
+  )
 
   // Crear pedido en transacción
   const order = await prisma.$transaction(async (tx) => {
@@ -298,18 +278,17 @@ export const createOrderGuest = async (data: OrderGuestInput['body']) => {
         }
       })
 
-      // Crear OrderItemIngredients
-      if (item.customIngredients.length > 0) {
-        for (const ci of item.customIngredients) {
-          await tx.orderItemIngredient.create({
-            data: {
-              orderItemId: orderItem.id,
-              ingredientId: ci.ingredientId,
-              action: ci.action,
-              priceSnapshot: ci.ingredient.extraPrice
-            }
-          })
-        }
+      // Crear OrderItemCustomization
+      if (item.customizations.length > 0) {
+        await tx.orderItemCustomization.createMany({
+          data: item.customizations.map(c => ({
+            orderItemId: orderItem.id,
+            customizableId: c.customizableId,
+            action: c.action,
+            nameSnapshot: c.customizable.name,
+            priceSnapshot: c.customizable.extraPrice
+          }))
+        })
       }
     }
 
@@ -323,17 +302,14 @@ export const createOrderGuest = async (data: OrderGuestInput['body']) => {
       }
     })
 
-    logger.info('Order created', {
-      orderId: order.id,
-      total: order.total.toString(),
-      deliveryType: order.deliveryType,
-      isGuest: true,
-      customerPhone: order.customerPhone
-    })
-
-    // No hay carrito que vaciar
-
     return newOrder
+  })
+
+  logger.info('Guest Order created', {
+    orderId: order.id,
+    total: order.total.toString(),
+    deliveryType: order.deliveryType,
+    customerPhone: order.customerPhone
   })
 
   // Devolver Pedido completo
@@ -342,9 +318,11 @@ export const createOrderGuest = async (data: OrderGuestInput['body']) => {
     include: {
       items: {
         include: {
-          customIngredients: {
-            include: {
-              ingredient: true
+          customizations: {
+            select: {
+              nameSnapshot: true,
+              priceSnapshot: true,
+              action: true
             }
           }
         }
@@ -357,6 +335,14 @@ export const createOrderGuest = async (data: OrderGuestInput['body']) => {
 }
 
 export const createOrderUserLogged = async (userId: string, data: OrderUserInput['body']) => {
+  // Comprobar que esta abierto el establecimiento
+  const settings = await prisma.settings.findFirst()
+  if (!settings) {
+    throw new AppError('Configuración del sistema no encontrada', 500)
+  }
+
+  await OrderService.checkBusinessStatus(settings)
+
   // Obtener usuario
   const user = await findUserById(userId)
   if (!user) {
@@ -370,40 +356,12 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
   }
 
   // Validar productos
-  await validateProducts(cartItems)
-
-  // 4. Obtener configuración de la pizzería
-  const settings = await prisma.settings.findFirst()
-  if (!settings) {
-    throw new AppError('Configuración del sistema no encontrada', 500)
-  }
+  await OrderService.validateCartItems(cartItems)
 
   // Calcular subtotal
-  let subtotal = new Decimal(0)
+  const { itemsWithPrices, subtotal } = OrderService.calculateSubtotal(cartItems)
 
-  const itemsWithPrices = cartItems.map(item => {
-    const addedIngredients = item.customIngredients
-      .filter(ci => ci.action === 'ADD')
-      .map(ci => ci.ingredient)
-
-    const unitPrice = calculateCartItemPrice(
-      item.product,
-      item.variant,
-      addedIngredients
-    )
-
-    const itemSubtotal = unitPrice.mul(item.quantity)
-    subtotal = subtotal.add(itemSubtotal)
-
-    return {
-      ...item,
-      unitPrice,
-      itemSubtotal
-    }
-  })
-
-  // Manejar direccion y calcualr deliveryFee
-
+  // Manejar direccion y calcular deliveryFee
   let address = null
   let deliveryFee = new Decimal(0)
 
@@ -418,26 +376,16 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
 
   const total = subtotal.add(deliveryFee)
 
-  // Validar Fecha
+  // Validar horario si esta programado
   if (data.scheduledFor) {
-    const scheduledDate = new Date(data.scheduledFor)
-    const now = new Date()
-
-    if (scheduledDate <= now) {
-      throw new AppError('La fecha programada debe ser futura', 400)
-    }
-
-    // TODO: validar horarios de apertura
+    await OrderService.validateScheduledTime(new Date(data.scheduledFor), settings)
   }
 
-  // Calcular estimatedTime
-  let estimatedTime = null
-  if (data.scheduledFor) {
-    estimatedTime = new Date(data.scheduledFor)
-  } else {
-    const now = new Date()
-    estimatedTime = new Date(now.getTime() + settings.avgPrepMinutes * 60000)
-  }
+  // Calcular tiempo estimado
+  const estimatedTime = await OrderService.calculateEstimatedTime(
+    settings,
+    data.scheduledFor ? new Date(data.scheduledFor) : undefined
+  )
 
   // Crear pedido en transacción
   const order = await prisma.$transaction(async (tx) => {
@@ -472,7 +420,7 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
           variantId: item.variantId,
           nameSnapshot: item.product.name,
           variantSnapshot: item.variant?.name,
-          notesSnapshot: item?.notes,
+          notesSnapshot: item.notes,
           unitPrice: item.unitPrice,
           quantity: item.quantity,
           subtotal: item.itemSubtotal
@@ -480,18 +428,17 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
         }
       })
 
-      // Crear OrderItemIngredients
-      if (item.customIngredients.length > 0) {
-        for (const ci of item.customIngredients) {
-          await tx.orderItemIngredient.create({
-            data: {
-              orderItemId: orderItem.id,
-              ingredientId: ci.ingredientId,
-              action: ci.action,
-              priceSnapshot: ci.ingredient.extraPrice
-            }
-          })
-        }
+      // Crear OrderItemCustomizations
+      if (item.customizations.length > 0) {
+        await tx.orderItemCustomization.createMany({
+          data: item.customizations.map(c => ({
+            orderItemId: orderItem.id,
+            customizableId: c.customizableId,
+            action: c.action,
+            nameSnapshot: c.customizable.name,
+            priceSnapshot: c.customizable.extraPrice
+          }))
+        })
       }
     }
 
@@ -511,12 +458,11 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
     return newOrder
   })
 
-  logger.info('Order created', {
+  logger.info('User Order created', {
     orderId: order.id,
     userId: order.userId,
     total: order.total.toString(),
     deliveryType: order.deliveryType,
-    isGuest: false
   })
 
   // Devolver pedido completo
@@ -525,9 +471,11 @@ export const createOrderUserLogged = async (userId: string, data: OrderUserInput
     include: {
       items: {
         include: {
-          customIngredients: {
-            include: {
-              ingredient: true
+          customizations: {
+            select: {
+              nameSnapshot: true,
+              priceSnapshot: true,
+              action: true
             }
           }
         }

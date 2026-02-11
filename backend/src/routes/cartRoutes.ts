@@ -1,7 +1,7 @@
 // src/routes/cartRoutes.ts
 import { Router } from 'express'
 import { authenticate } from '../middlewares/auth'
-import * as cartController from '../controllers/cartController'
+import * as CartController from '../controllers/cartController'
 import { validateRequest } from '../middlewares/validateRequest'
 import { cartItemSchema, updateCartItemSchema } from '../validators/cartValidator'
 
@@ -40,7 +40,7 @@ router.use(authenticate)
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/', cartController.getAllCart)
+router.get('/', CartController.getAllCart)
 
 /**
  * @swagger
@@ -67,7 +67,7 @@ router.get('/', cartController.getAllCart)
  *       401:
  *         description: No autenticado
  */
-router.get('/summary', cartController.getSummary)
+router.get('/summary', CartController.getSummary)
 
 /**
  * @swagger
@@ -108,7 +108,7 @@ router.get('/summary', cartController.getSummary)
  *       404:
  *         description: Producto no encontrado
  */
-router.post('/items', validateRequest(cartItemSchema), cartController.addToCart)
+router.post('/items', validateRequest(cartItemSchema), CartController.addToCart)
 
 /**
  * @swagger
@@ -171,7 +171,7 @@ router.post('/items', validateRequest(cartItemSchema), cartController.addToCart)
  *       404:
  *         description: Item no encontrado o no pertenece al usuario
  */
-router.put('/items/:id', validateRequest(updateCartItemSchema), cartController.updateCartItem)
+router.put('/items/:id', validateRequest(updateCartItemSchema), CartController.updateCartItem)
 
 /**
  * @swagger
@@ -209,7 +209,7 @@ router.put('/items/:id', validateRequest(updateCartItemSchema), cartController.u
  *       404:
  *         description: Item no encontrado o no pertenece al usuario
  */
-router.delete('/items/:id', cartController.deleteItem)
+router.delete('/items/:id', CartController.deleteItem)
 
 /**
  * @swagger
@@ -237,6 +237,6 @@ router.delete('/items/:id', cartController.deleteItem)
  *       401:
  *         description: No autenticado
  */
-router.delete('/items', cartController.clearCart)
+router.delete('/', CartController.clearCart)
 
 export default router

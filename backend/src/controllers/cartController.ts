@@ -18,18 +18,19 @@ export const getAllCart = async (req: Request, res: Response, next: NextFunction
 export const addToCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id
-    const { productId, variantId, quantity, notes, customIngredients } = req.body
+    const { productId, variantId, quantity, notes, customizations } = req.body
 
     const cartItem = await CartModel.addToCart(userId, {
       productId,
       variantId,
       quantity,
       notes,
-      customIngredients
+      customizations
     })
 
     res.status(201).json({
       success: true,
+      message: 'Producto añadido al carrito',
       data: cartItem
     })
   } catch (error) {
@@ -41,12 +42,12 @@ export const updateCartItem = async (req: Request, res: Response, next: NextFunc
   try {
     const userId = req.user!.id
     const { id } = req.params
-    const { quantity, notes, customIngredients } = req.body
+    const { quantity, notes, customizations } = req.body
 
     const cartItem = await CartModel.updateCartItem(userId, id, {
       quantity,
       notes,
-      customIngredients
+      customizations
     })
 
     res.status(200).json({

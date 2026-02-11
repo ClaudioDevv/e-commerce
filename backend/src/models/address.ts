@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma'
-import { AppError } from '../utils/AppError'
 
 export const getAll = async (userId: string) => {
   return await prisma.address.findMany({
@@ -18,10 +17,6 @@ export const getAddressById = async (id: string, userId: string) => {
       userId
     }
   })
-
-  if (!address) {
-    throw new AppError('Dirección no encontrada', 404)
-  }
 
   return address
 }
@@ -85,7 +80,6 @@ export const updateAddress = async (
   return await prisma.address.update({
     where: { id },
     data
-
   })
 }
 

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getAllProducts, getProductsByCategory, getProductByIdentifier } from '../controllers/productController'
+import { getAllProducts, getProductsByCategory, getProductById } from '../controllers/productController'
 
 const router = Router()
 
@@ -106,6 +106,6 @@ router.get('/category/:category', getProductsByCategory)
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:id', getProductByIdentifier)
+router.get('/:id', getProductById)
 
 export default router
