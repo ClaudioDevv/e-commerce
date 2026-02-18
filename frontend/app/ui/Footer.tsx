@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link';
 import { FacebookIcon, InstagramIcon, XIcon, YTIcon } from './Icons';
 import Image from 'next/image';
@@ -61,10 +63,11 @@ export default function Footer() {
 
             <div className='flex flex-col gap-2'>
               <h3 className='font-semibold mb-1'>Carta</h3>
-              <Link href={'#'} className='text-sm hover:underline'>Pizzas</Link>
-              <Link href={'#'} className='text-sm hover:underline'>Entrantes</Link>
-              <Link href={'#'} className='text-sm hover:underline'>Bebidas</Link>
-              <Link href={'#'} className='text-sm hover:underline'>Postres</Link>
+              <Link href={'/pizzas'} className='text-sm hover:underline'>Pizzas</Link>
+              <Link href={'/burgers'} className='text-sm hover:underline'>Burgers</Link>
+              <Link href={'/entrantes'} className='text-sm hover:underline'>Entrantes</Link>
+              <Link href={'/bebidas'} className='text-sm hover:underline'>Bebidas</Link>
+              <Link href={'/postres'} className='text-sm hover:underline'>Postres</Link>
             </div>
 
             <div className='flex flex-col gap-2'>

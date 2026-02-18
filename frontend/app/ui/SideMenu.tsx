@@ -34,7 +34,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
       )}
 
       <aside 
-        className={`fixed ${topClass} left-0 bottom-0 w-[80%] bg-[#f9f9f9] shadow-lg z-20 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed ${topClass} left-0 bottom-0 w-[75%] bg-[#f9f9f9] shadow-lg z-20 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
