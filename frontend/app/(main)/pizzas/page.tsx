@@ -35,7 +35,7 @@ export default async function PizzasPage() {
 
       <PizzaCategoriesBar />
 
-      <section className='mb-12 scroll-mt-24'>
+      <section className='mb-10 scroll-mt-24'>
         <header className='mb-4'>
             <h2 className='text-2xl font-bold text-gray-800 mb-2'>
               Todas las Pizzas

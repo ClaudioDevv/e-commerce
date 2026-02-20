@@ -42,7 +42,7 @@ export default function PizzaCategoriesBar () {
   }, [path])
 
   return (
-    <nav className='mb-8 overflow-x-auto' aria-label='Categorías de pizzas'>
+    <nav className='mb-4 overflow-x-auto' aria-label='Categorías de pizzas'>
         <ul className='flex gap-4 pb-2 scroll-smooth'>
           {categories.map((category) => {
             const isActive = path === category.slug

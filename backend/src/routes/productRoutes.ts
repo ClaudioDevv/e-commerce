@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getAllProducts, getProductsByCategory, getProductById } from '../controllers/productController'
+import { getAllProducts, getProductsByCategory, getProductsBySubcategory, getProductById } from '../controllers/productController'
 
 const router = Router()
 
@@ -66,6 +66,8 @@ router.get('/', getAllProducts)
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/category/:category', getProductsByCategory)
+
+router.get('/category/:category/:subcategory', getProductsBySubcategory)
 
 /**
  * @swagger

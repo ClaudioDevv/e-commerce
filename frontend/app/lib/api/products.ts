@@ -26,3 +26,15 @@ export const getPizzas = async (): Promise<Product[]> => {
   
   return jsonRes.data || []
 }
+
+export const getPizzasBySubcategory = async (subcategory: string): Promise<Product[]> => {
+  const res = await fetch(`http://localhost:3001/api/products/category/pizza/${subcategory}`, {
+    next: { revalidate: 3600 } // cache 1 hora, revalida automáticamente
+  })
+
+  if (!res.ok) throw new Error('Error al cargar las pizzas')
+
+  const jsonRes = await res.json()
+  
+  return jsonRes.data || []
+}

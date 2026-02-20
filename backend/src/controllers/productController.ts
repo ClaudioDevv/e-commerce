@@ -39,6 +39,33 @@ export const getProductsByCategory = async (req: Request, res: Response, next: N
   }
 }
 
+export const getProductsBySubcategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category: catParam, subcategory: subcatParam } = req.params
+    const upperCat = catParam.toUpperCase()
+    const upperSubcat = subcatParam.toUpperCase()
+
+    // Validación: comprobar que la string recibida es un valor del enum
+    const validValues = Object.values(Category) as string[]
+    if (!validValues.includes(upperCat)) {
+      throw new AppError('Categoría no existente', 400)
+    }
+
+    const category = upperCat as Category
+
+    const products = await ProductModel.getBySubcategory(category, upperSubcat)
+
+    if (products.length === 0) throw new AppError('No existen productos con esa subcategoría', 400)
+
+    res.status(200).json({
+      success: true,
+      data: products
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params
