@@ -13,10 +13,22 @@ export const getByCategory = async (category: Category) => {
       category,
       active: true
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      basePrice: true,
+      imageUrl: true,
+      subcategory: true,
+      allowCustomization: true,
       variants: {
         where: { active: true },
-        orderBy: { priceDelta: 'asc' }
+        orderBy: { priceDelta: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          priceDelta: true
+        }
       }
     },
     orderBy: { name: 'asc' }

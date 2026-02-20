@@ -1,6 +1,6 @@
 import Image from "next/image";
-import CarouselOfertas from './ui/CarouselOfertas';
-import Header from './ui/Header';
+import CarouselOfertas from '@/app/ui/CarouselOfertas';
+import Header from '@/app/ui/Header';
 
 export default function Home() {
   return (

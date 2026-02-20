@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
         destination: 'http://localhost:3001/api/:path*'
       }
     ]
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      }
+    ]
   }
 };
 
