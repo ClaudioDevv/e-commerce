@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Eye, EyeOff } from 'lucide-react'
+import { authApi } from '@/app/lib/api/auth'
 
 interface RegistrarProps {
   isOpen: boolean
@@ -82,14 +83,38 @@ export default function Registrar({ isOpen, onClose, onGoToLogin }: RegistrarPro
 
     setIsLoading(true)
     try {
-      console.log({ 
-        nombre, apellidos, email, telefono, 
-        password, aceptaComunicaciones, aceptaPolitica 
+      const response = await authApi.register({
+        email,
+        password,
+        name: nombre,
+        surname: apellidos,
+        phone: telefono,
       })
-      await new Promise(r => setTimeout(r, 1000))
+
+      console.log('Registro exitoso:', response)
+
+      setNombre('')
+      setApellidos('')
+      setEmail('')
+      setTelefono('')
+      setPassword('')
+      setPasswordRepeat('')
+      setAceptaComunicaciones(false)
+      setAceptaPolitica(false)
+      
       onClose()
-    } catch (err) {
-      console.error(err)
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('ya existe')) {
+          setErrors({ email: 'Este email ya está registrado' })
+        } else if (error.message.includes('Teléfono ya registrado')) {
+          setErrors({ telefono: 'Este teléfono ya está registrado' })
+        } else {
+          setErrors({ general: error.message })
+        }
+      } else {
+        setErrors({ general: 'Error al crear la cuenta. Intenta de nuevo.' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -116,6 +141,13 @@ export default function Registrar({ isOpen, onClose, onGoToLogin }: RegistrarPro
               <X size={28} />
             </button>
           </div>
+
+          {/* Error general */}
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{errors.general}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 

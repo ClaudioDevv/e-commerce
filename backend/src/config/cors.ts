@@ -2,7 +2,7 @@ import { CorsOptions } from 'cors'
 import config from './config'
 
 const developmentOrigins = [
-  'http://localhost:5173',
+  'http://localhost:3000',
   config.frontendUrl,
 ]
 

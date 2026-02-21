@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Eye, EyeOff } from 'lucide-react'
+import { authApi } from '@/app/lib/api/auth'
 
 interface InicioSesionProps {
   isOpen: boolean
@@ -14,8 +15,16 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+
+  function clearError(field: string) {
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors[field]
+      return newErrors
+    })
+  }
 
   // Bloquea el scroll mientras el modal está abierto
   useEffect(() => {
@@ -50,11 +59,30 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
 
     setIsLoading(true)
     try {
-      console.log({ email, password, rememberMe })
-      await new Promise(r => setTimeout(r, 1000))
+      const response = await authApi.login({
+        email,
+        password
+      })
+
+      console.log('Inicio de sesión exitoso:', response)
+
+      setEmail('')
+      setPassword('')
+      setRememberMe(false)
+
       onClose()
-    } catch (err) {
-      console.error(err)
+    } catch (error) {
+      if(error instanceof Error){
+        if(error.message.includes('no existe')) {
+          setErrors({ email: 'Este email no está registrado o inactivo' })
+        } else if(error.message.includes('incorrecta')) {
+          setErrors({ password: 'Contraseña incorrecta' })
+        } else {
+          setErrors({ general: error.message })
+        }
+      } else {
+        setErrors({ general: 'Error al crear la cuenta. Intenta de nuevo.' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -82,6 +110,13 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
             </button>
           </div>
 
+          {/* Error general */}
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{errors.general}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 
             {/* Email */}
@@ -96,7 +131,7 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
                 value={email}
                 onChange={e => {
                   setEmail(e.target.value)
-                  if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
+                  if (errors.email) clearError('email')
                 }}
                 placeholder="ejemplo@correo.com"
                 className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none transition
@@ -112,7 +147,6 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
                 Tu contraseña *
               </label>
 
-              {/* Input + ojo — el ojo vive DENTRO del relative, el resto fuera */}
               <div className="relative">
                 <input
                   id="password"
@@ -121,7 +155,7 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
                   value={password}
                   onChange={e => {
                     setPassword(e.target.value)
-                    if (errors.password) setErrors(prev => ({ ...prev, password: undefined }))
+                    if (errors.password) clearError('password')
                   }}
                   placeholder="Tu contraseña"
                   className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition
