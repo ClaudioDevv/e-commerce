@@ -71,7 +71,7 @@ export default async function PizzasPage() {
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
               {pizzasDeCategoria.length > 0 ? (
                 pizzasDeCategoria.map(pizza => (
-                  <ProductCard key={pizza.id} pizza={pizza} />
+                  <ProductCard key={pizza.id} product={pizza} />
                 ))
               ) : (
                 <p className='text-gray-500 col-span-full text-center py-8'>
