@@ -1,8 +1,8 @@
 {
-  "name": "backend",
+  "name": "@e-commerce/backend",
   "version": "1.0.0",
-  "description": "Backend en node junto a typescript para tener una mayor robustez",
-  "main": "server.ts",
+  "description": "REST API for a pizzeria e-commerce platform built with Node.js, Express and TypeScript",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
@@ -21,8 +21,7 @@
     "postgresql"
   ],
   "author": "Claudio Rivas Boza",
-  "license": "GNU",
-  "packageManager": "pnpm@10.15.0",
+  "packageManager": "pnpm@10.30.1",
   "dependencies": {
     "@prisma/adapter-pg": "^7.1.0",
     "bcrypt": "^6.0.0",
