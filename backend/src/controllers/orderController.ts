@@ -7,6 +7,7 @@ import { stripe } from '../config/stripe'
 import { createStripeCheckoutSession } from '../services/stripeService'
 import Stripe from 'stripe'
 import { logger } from '../config/logger'
+import { MAX_ORDERS_PAGE } from '../constants/order'
 
 export const getAllOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -18,7 +19,7 @@ export const getAllOrders = async (req: Request, res: Response, next: NextFuncti
       dateFrom: req.query.dateFrom as string | undefined,
       dateTo: req.query.dateTo as string | undefined,
       page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: 20
+      limit: MAX_ORDERS_PAGE
     }
 
     const result = await OrderModel.getAllOrders(userId, role, filters)

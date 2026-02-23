@@ -42,7 +42,7 @@ export const createAddress = async (req: Request, res: Response, next: NextFunct
     const userId = req.user!.id
     const { label, street, city, postalCode, province, instructions, isDefault } = req.body
 
-    const address = await addressModel.createAddress({ userId, label, street, city, postalCode, province, instructions, isDefault: isDefault || false })
+    const address = await addressModel.createAddress(userId, { label, street, city, postalCode, province, instructions, isDefault: isDefault || false })
 
     res.status(201).json({
       success: true,

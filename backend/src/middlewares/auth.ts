@@ -4,17 +4,6 @@ import { AppError } from '../utils/AppError'
 import { UserRole } from '../generated/prisma'
 import { prisma } from '../lib/prisma'
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string
-        role: UserRole
-      }
-    }
-  }
-}
-
 export const authenticate = async (req: Request, res: Response, next: NextFunction
 ) => {
   try {

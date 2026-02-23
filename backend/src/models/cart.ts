@@ -4,8 +4,7 @@ import { calculateCartItemPrice } from '../utils/priceCalculator'
 import { CartItemInput, UpdateCartItemInput } from '../validators/cartValidator'
 import { prisma } from '../lib/prisma'
 import * as CartService from '../services/cartService'
-
-const MAX_QUANTITY_PER_ITEM = 15
+import { MAX_QUANTITY_PER_ITEM } from '../constants/cart'
 
 export const getCartByUserId = async (userId: string) => {
   return await prisma.cartItem.findMany({

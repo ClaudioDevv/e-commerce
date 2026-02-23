@@ -1,22 +1,7 @@
 /* eslint-disable camelcase */
 import { AppError } from '../utils/AppError'
 import { stripe } from '../config/stripe'
-import { Prisma } from '../generated/prisma'
-
-export type OrderForStripeCheckout = {
-  id: string
-  userId: string | null
-  status: string
-  deliveryFee: Prisma.Decimal
-  payment: {
-    provider: string
-  } | null
-  items: Array<{
-    nameSnapshot: string
-    unitPrice: Prisma.Decimal
-    quantity: number
-  }>
-}
+import { OrderForStripeCheckout } from '../types/payment'
 
 export const createStripeCheckoutSession = async (order: OrderForStripeCheckout) => {
   if (order.status !== 'PENDING') {

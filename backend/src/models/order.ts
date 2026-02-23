@@ -7,15 +7,7 @@ import { getCartByUserId, deleteCart } from './cart'
 import { getAddressById } from './address'
 import { findUserById } from './user'
 import * as OrderService from '../services/orderService'
-
-// Interfaz para filtros
-interface OrderFilters {
-  status?: string
-  dateFrom?: string
-  dateTo?: string
-  page: number
-  limit: number
-}
+import { OrderFilters } from '../types/order'
 
 export const getSettings = async () => {
   return await prisma.settings.findFirst()

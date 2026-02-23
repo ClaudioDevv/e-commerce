@@ -44,6 +44,6 @@ export const apiLimiter = rateLimit({
   max: 30,
   message: {
     success: false,
-    error: 'Límite de peticiones excedido. INtenta de nuevo en 1 minuto'
+    error: 'Límite de peticiones excedido. Intenta de nuevo en 1 minuto'
   }
 })

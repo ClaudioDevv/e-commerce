@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma'
+import { AddressInput, UpdateAddressInput } from '../validators/addressValidator'
 
 export const getAll = async (userId: string) => {
   return await prisma.address.findMany({
@@ -29,18 +30,9 @@ export const deleteAddress = async (id: string, userId: string) => {
   })
 }
 
-export const createAddress = async (addressData: {
-  userId: string,
-  label?: string,
-  street: string,
-  city: string,
-  postalCode: string,
-  province?: string,
-  instructions?: string,
-  isDefault?: boolean
-}) => {
+export const createAddress = async (userId:string, addressData: AddressInput['body']) => {
   const existingAddresses = await prisma.address.count({
-    where: { userId: addressData.userId }
+    where: { userId }
   })
 
   const isDefault = existingAddresses === 0 ? true : (addressData.isDefault || false)
@@ -48,7 +40,7 @@ export const createAddress = async (addressData: {
   if (isDefault) {
     await prisma.address.updateMany({
       where: {
-        userId: addressData.userId,
+        userId,
         isDefault: true
       },
       data: { isDefault: false }
@@ -57,6 +49,7 @@ export const createAddress = async (addressData: {
 
   return await prisma.address.create({
     data: {
+      userId,
       ...addressData,
       isDefault
     }
@@ -66,14 +59,7 @@ export const createAddress = async (addressData: {
 export const updateAddress = async (
   id: string,
   userId: string,
-  data: {
-    label?: string,
-    street?: string,
-    city?: string,
-    postalCode?: string,
-    province?: string,
-    instructions?: string
-  }
+  data: UpdateAddressInput['body']
 ) => {
   await getAddressById(id, userId)
 
@@ -86,7 +72,6 @@ export const updateAddress = async (
 export const defaultAddress = async (id: string, userId: string) => {
   await getAddressById(id, userId)
 
-  // Transacción
   return await prisma.$transaction(async (tx) => {
     // Quitar isDefault de todas las direcciones del usuario
     await tx.address.updateMany({

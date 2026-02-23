@@ -3,39 +3,10 @@ import { AppError } from '../utils/AppError'
 import { prisma } from '../lib/prisma'
 import { CartItem, ProductVariant, Customizable, DayOfWeek, Settings, Product, CartItemCustomization, ProductBaseCustomizable, ProductAvailableCustomizable } from '../generated/prisma'
 import { calculateCartItemPrice } from '../utils/priceCalculator'
-import { CustomizationInput, validateVariant } from './cartService'
-
-const MAX_PENDING_ORDERS = 3
-const MILLISECONDS_PER_MINUTE = 60000
-const SCHEDULE_INTERVAL_MINUTES = 15
-
-interface TimeSlot {
-  time: string
-  available: boolean
-  estimatedDelivery?: Date
-}
-
-interface GuestOrderItem {
-  productId: string
-  variantId?: string
-  quantity: number
-  notes?: string
-  customizations?: CustomizationInput[]
-}
-
-type ItemWithPrice = {
-  productId: string
-  product: Product
-  variantId?: string | null
-  variant?: ProductVariant | null
-  quantity: number
-  notes?: string | null
-  customizations: Array<{
-    customizableId: number
-    customizable: Customizable
-    action: 'ADD' | 'REMOVE'
-  }>
-}
+import { validateVariant } from './cartService'
+import { MAX_PENDING_ORDERS, MILLISECONDS_PER_MINUTE, SCHEDULE_INTERVAL_MINUTES } from '../constants/order'
+import { TimeSlot, ItemWithPrice, GuestOrderItem } from '../types/order'
+import { CustomizationInput } from '../types/cart'
 
 const validateCustomizationsWithData = (
   product: Product & {

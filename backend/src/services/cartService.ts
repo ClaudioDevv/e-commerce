@@ -1,11 +1,7 @@
 import { AppError } from '../utils/AppError'
 import { prisma } from '../lib/prisma'
-import { Customizable, CustomizationAction, Product, ProductAvailableCustomizable, ProductBaseCustomizable, ProductVariant } from '../generated/prisma'
-
-export interface CustomizationInput {
-  customizableId: number
-  action: CustomizationAction
-}
+import { Customizable, Product, ProductAvailableCustomizable, ProductBaseCustomizable, ProductVariant } from '../generated/prisma'
+import { CustomizationInput } from '../types/cart'
 
 export const validateCustomizations = async (
   product: Product & {

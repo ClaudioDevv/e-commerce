@@ -1,0 +1,4 @@
+export const MAX_PENDING_ORDERS = 3
+export const MILLISECONDS_PER_MINUTE = 60000
+export const SCHEDULE_INTERVAL_MINUTES = 15
+export const MAX_ORDERS_PAGE = 20

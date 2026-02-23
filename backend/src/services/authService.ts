@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt'
 import config from '../config/config'
 import jwt from 'jsonwebtoken'
 import { AppError } from '../utils/AppError'
+import { JwtPayload } from '../types/auth'
 
 export const hashPassword = async (password: string): Promise<string> => {
   return await bcrypt.hash(password, config.bcrypt.saltRounds)
@@ -9,11 +10,6 @@ export const hashPassword = async (password: string): Promise<string> => {
 
 export const comparePassword = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
   return await bcrypt.compare(plainPassword, hashedPassword)
-}
-
-interface JwtPayload {
-  userId: string
-  role: string
 }
 
 export const generateAccessToken = (userId: string, role: string): string => {

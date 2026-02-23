@@ -1,10 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { logger } from '../config/logger'
-
-export interface AppError extends Error {
-  statusCode?: number;
-  isOperational?: boolean;
-}
+import { AppError } from '../utils/AppError'
 
 export const errorHandler = (
   err: AppError,
