@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { inter } from '@/app/ui/fonts'
 import Footer from '@/app/ui/Footer';
+import { AuthProvider } from '@/app/context/AuthContext';
 
 export const metadata: Metadata = {
   title: "E-commerce de Pizzeria ",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.variable} antialiased`}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Footer />
       </body>
     </html>

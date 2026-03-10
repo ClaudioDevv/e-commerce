@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { X, Eye, EyeOff } from 'lucide-react'
-import { authApi } from '@/app/lib/api/auth'
+import { useAuth } from '@/app/context/AuthContext'
+import Link from 'next/link'
 
 interface RegistrarProps {
   isOpen: boolean
@@ -11,6 +12,7 @@ interface RegistrarProps {
 }
 
 export default function Registrar({ isOpen, onClose, onGoToLogin }: RegistrarProps) {
+  const { register } = useAuth()
   const [nombre, setNombre] = useState('')
   const [apellidos, setApellidos] = useState('')
   const [email, setEmail] = useState('')
@@ -83,7 +85,7 @@ export default function Registrar({ isOpen, onClose, onGoToLogin }: RegistrarPro
 
     setIsLoading(true)
     try {
-      const response = await authApi.register({
+      const response = await register({
         email,
         password,
         name: nombre,
@@ -329,13 +331,13 @@ export default function Registrar({ isOpen, onClose, onGoToLogin }: RegistrarPro
                 />
                 <span className="text-xs text-gray-600 leading-tight">
                   He leído y acepto la{' '}
-                  <a href="/politica-privacidad" target="_blank" className="text-red-500 underline">
+                  <Link href="/politica-privacidad" target="_blank" className="text-red-500 underline">
                     Política de privacidad
-                  </a>
+                  </Link>
                   {' '}y las{' '}
-                  <a href="/condiciones" target="_blank" className="text-red-500 underline">
+                  <Link href="/condiciones" target="_blank" className="text-red-500 underline">
                     Condiciones generales de compra
-                  </a>{' '}
+                  </Link>{' '}
                   *
                 </span>
               </label>

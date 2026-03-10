@@ -17,5 +17,16 @@ export const loginSchema = z.object({
   })
 })
 
+export const updateUserSchema = z.object({
+  body: z.object({
+    name: z.string().min(2, 'El nombre tiene que tener mínimo 2 carácteres').optional(),
+    surname: z.string().min(2, 'El apellido tiene que tener mínimo 2 carácteres').optional(),
+    phone: z.string().regex(/^\d{9}$/, 'El teléfono debe tener exactamente 9 dígitos').optional()
+  }).refine(data => Object.keys(data).length > 0, {
+    message: 'Debe proporcionar al menos un campo para actualizar'
+  })
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
+export type UpdateUserInput = z.infer<typeof updateUserSchema>

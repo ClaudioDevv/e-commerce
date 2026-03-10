@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Eye, EyeOff } from 'lucide-react'
-import { authApi } from '@/app/lib/api/auth'
+import { useAuth } from '@/app/context/AuthContext'
 
 interface InicioSesionProps {
   isOpen: boolean
@@ -11,6 +11,7 @@ interface InicioSesionProps {
 }
 
 export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: InicioSesionProps) {
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -59,10 +60,7 @@ export default function IniciarSesion({ isOpen, onClose, onGoToRegister }: Inici
 
     setIsLoading(true)
     try {
-      const response = await authApi.login({
-        email,
-        password
-      })
+      const response = await login(email, password)
 
       console.log('Inicio de sesión exitoso:', response)
 

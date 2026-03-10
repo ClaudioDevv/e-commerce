@@ -1,3 +1,5 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
 export type ProductVariant = {
   id: string
   name: string
@@ -16,7 +18,7 @@ export type Product = {
 }
 
 export const getPizzas = async (): Promise<Product[]> => {
-  const res = await fetch('http://localhost:3001/api/products/category/pizza', {
+  const res = await fetch(`${API_URL}/api/products/category/pizza`, {
     next: { revalidate: 3600 } // cache 1 hora, revalida automáticamente
   })
 
@@ -28,8 +30,8 @@ export const getPizzas = async (): Promise<Product[]> => {
 }
 
 export const getPizzasBySubcategory = async (subcategory: string): Promise<Product[]> => {
-  const res = await fetch(`http://localhost:3001/api/products/category/pizza/${subcategory}`, {
-    next: { revalidate: 3600 } // cache 1 hora, revalida automáticamente
+  const res = await fetch(`${API_URL}/api/products/category/pizza/${subcategory}`, {
+    next: { revalidate: 3600 }
   })
 
   if (!res.ok) throw new Error('Error al cargar las pizzas')
@@ -40,8 +42,8 @@ export const getPizzasBySubcategory = async (subcategory: string): Promise<Produ
 }
 
 export const getBebidas = async (): Promise<Product[]> => {
-  const res = await fetch('http://localhost:3001/api/products/category/bebida', {
-    next: { revalidate: 3600 } // cache 1 hora, revalida automáticamente
+  const res = await fetch(`${API_URL}/api/products/category/bebida`, {
+    next: { revalidate: 3600 }
   })
 
   if (!res.ok) throw new Error('Error al cargar las bebidas')

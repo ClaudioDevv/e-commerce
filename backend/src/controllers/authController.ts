@@ -166,7 +166,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 
     res.status(200).json({
       success: true,
-      data: { publicUser }
+      data: { user: publicUser }
     })
   } catch (error) {
     next(error)
@@ -183,8 +183,38 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
     clearAuthCookie(res)
 
     res.status(200).json({
-      succes: true,
+      success: true,
       message: 'Logout exitoso'
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id
+    if (!userId) {
+      throw new AppError('No autenticado', 401)
+    }
+
+    const { name, surname, phone } = req.body
+
+    if (phone) {
+      const existingPhone = await UserModel.findUserByPhone(phone)
+      if (existingPhone && existingPhone.id !== userId) {
+        throw new AppError('El teléfono ya está en uso', 409)
+      }
+    }
+
+    const updatedUser = await UserModel.updateUser(userId, { name, surname, phone })
+
+    const { password: _, ...publicUser } = updatedUser
+
+    res.status(200).json({
+      success: true,
+      message: 'Usuario actualizado.',
+      data: { user: publicUser }
     })
   } catch (error) {
     next(error)

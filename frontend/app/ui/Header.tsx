@@ -5,13 +5,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { CartIcon, MenuIcon, UserIcon } from './Icons';
 import SideMenu from './SideMenu';
-import AuthModal from './AuthModal'
+import AuthModal from './AuthModal';
+import PerfilModal from './PerfilModal'
+import { useAuth } from '@/app/context/AuthContext';
 
 type Headervariant = 'home' | 'main'
 
 export default function Header({ variant = 'home'}: {variant?: Headervariant} ) {
+  const { isAuthenticated, isLoading } = useAuth()
+
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+   const [isPerfilOpen, setIsPerfilOpen] = useState(false)
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -26,14 +31,26 @@ export default function Header({ variant = 'home'}: {variant?: Headervariant} ) 
     }
   }, [isMenuOpen])
 
+  if (isLoading) {
+    return <div className="h-16 bg-red-500 animate-pulse" />
+  }
+
   const handleMenuToggle = () => {
     setIsAuthOpen(false)
+    setIsPerfilOpen(false)
     setIsMenuOpen(!isMenuOpen)
   }
 
-  const handleAuthToggle = () => {
+  const handleUserClick = () => {
     setIsMenuOpen(false)
-    setIsAuthOpen(!isAuthOpen)
+    
+    if(isAuthenticated) {
+      setIsPerfilOpen(!isPerfilOpen)
+      setIsAuthOpen(false)
+    } else {
+      setIsAuthOpen(!isAuthOpen)
+      setIsPerfilOpen(false)
+    }
   }
 
   const logo = (
@@ -59,10 +76,12 @@ export default function Header({ variant = 'home'}: {variant?: Headervariant} ) 
       <button
         aria-label="Acceso de usuario"
         className="flex flex-col items-center gap-0"
-        onClick={handleAuthToggle}
+        onClick={handleUserClick}
       >
         <UserIcon size={23} />
-        <span className='text-[10px]'>ACCESO</span>
+        <span className='text-[10px]'>
+          {isAuthenticated ? 'PERFIL' : 'ACCESO'}
+        </span>
       </button>
 
       <button aria-label="Ver carrito" className="flex flex-col items-center gap-0.5">
@@ -75,7 +94,6 @@ export default function Header({ variant = 'home'}: {variant?: Headervariant} ) 
   return (
     <>
       {variant === 'home' ? (
-
         <header className='sticky top-0 w-full text-white bg-red-500 flex flex-col justify-center items-center gap-2 p-2 z-40'>
           {logo}
           <nav className='flex gap-3 justify-between items-center w-full max-w-md px-2'>
@@ -107,6 +125,13 @@ export default function Header({ variant = 'home'}: {variant?: Headervariant} ) 
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
       />
+
+      {isAuthenticated && (
+        <PerfilModal
+          isOpen={isPerfilOpen}
+          onClose={() => setIsPerfilOpen(false)}
+        />
+      )}
     </>
   )
 }

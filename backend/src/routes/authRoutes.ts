@@ -1,8 +1,8 @@
 import { Router } from 'express'
-import { register, login, refresh, getMe, logout } from '../controllers/authController'
+import { register, login, refresh, getMe, logout, updateUser } from '../controllers/authController'
 import { authenticate } from '../middlewares/auth'
 import { validateRequest } from '../middlewares/validateRequest'
-import { registerSchema, loginSchema } from '../validators/authValidator'
+import { registerSchema, loginSchema, updateUserSchema } from '../validators/authValidator'
 
 const router = Router()
 
@@ -215,5 +215,7 @@ router.post('/logout', authenticate, logout)
  *         description: Usuario no encontrado
  */
 router.get('/me', authenticate, getMe)
+
+router.put('/me', validateRequest(updateUserSchema), authenticate, updateUser)
 
 export default router

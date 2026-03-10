@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma'
-import { RegisterInput } from '../validators/authValidator'
+import { RegisterInput, UpdateUserInput } from '../validators/authValidator'
 
 export const findUserByEmail = async (email: string) => {
   return await prisma.user.findUnique({
@@ -25,5 +25,16 @@ export const createUser = async (userData: RegisterInput['body']) => {
       ...userData,
       role: 'CUSTOMER'
     }
+  })
+}
+
+export const updateUser = async (userId: string, userData: UpdateUserInput['body']) => {
+  const dataToUpdate = Object.fromEntries(
+    Object.entries(userData).filter(([_, value]) => (value !== undefined && value !== null))
+  )
+
+  return await prisma.user.update({
+    where: { id: userId },
+    data: dataToUpdate
   })
 }
