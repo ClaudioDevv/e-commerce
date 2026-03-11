@@ -165,7 +165,7 @@ router.post('/refresh', refresh)
  *                   type: string
  *                   example: "Logout exitoso"
  */
-router.post('/logout', authenticate, logout)
+router.post('/logout', logout)
 
 /**
  * @swagger

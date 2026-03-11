@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authApi } from '@/app/lib/api/auth'
+import { useSearchParams } from 'next/navigation'
 import type { User } from '@/app/lib/api/auth'
 
 interface RegisterData {
@@ -28,10 +29,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     checkAuth()
   }, [])
+
+
+  useEffect(() => {
+    if (searchParams.get('login') === 'true') {
+      window.history.replaceState({}, '', '/')
+      setUser(null)
+      setIsLoading(false)
+    }
+  }, [searchParams])
 
   async function checkAuth() {
     try {

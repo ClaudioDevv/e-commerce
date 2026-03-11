@@ -120,6 +120,7 @@ export const authApi = {
     if (!response.ok) {
       throw new Error(result.message || 'Error al cerrar sesión')
     }
+    console.log(response)
 
     return result
   }

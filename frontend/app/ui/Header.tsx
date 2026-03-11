@@ -41,7 +41,7 @@ export default function Header({ variant = 'home'}: {variant?: Headervariant} ) 
     setIsMenuOpen(!isMenuOpen)
   }
 
-  const handleUserClick = () => {
+  const handleUserClick = async () => {
     setIsMenuOpen(false)
     
     if(isAuthenticated) {
