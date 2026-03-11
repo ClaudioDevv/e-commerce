@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.API_URL || 'http://localhost:3001'
 
 export type ProductVariant = {
   id: string
@@ -17,38 +17,30 @@ export type Product = {
   variants: ProductVariant[]
 }
 
-export const getPizzas = async (): Promise<Product[]> => {
-  const res = await fetch(`${API_URL}/api/products/category/pizza`, {
-    next: { revalidate: 3600 } // cache 1 hora, revalida automáticamente
-  })
+const CACHE_1H: RequestInit = { next: { revalidate: 3600 } }
 
-  if (!res.ok) throw new Error('Error al cargar las pizzas')
-
-  const jsonRes = await res.json()
+export const productsApi = {
+  async getPizzas (): Promise<Product[]> {
+    const res = await fetch(`${API_URL}/api/products/category/pizza`, CACHE_1H)
   
-  return jsonRes.data || []
-}
-
-export const getPizzasBySubcategory = async (subcategory: string): Promise<Product[]> => {
-  const res = await fetch(`${API_URL}/api/products/category/pizza/${subcategory}`, {
-    next: { revalidate: 3600 }
-  })
-
-  if (!res.ok) throw new Error('Error al cargar las pizzas')
-
-  const jsonRes = await res.json()
+    if (!res.ok) throw new Error('Error al cargar las pizzas')
   
-  return jsonRes.data || []
-}
-
-export const getBebidas = async (): Promise<Product[]> => {
-  const res = await fetch(`${API_URL}/api/products/category/bebida`, {
-    next: { revalidate: 3600 }
-  })
-
-  if (!res.ok) throw new Error('Error al cargar las bebidas')
-
-  const jsonRes = await res.json()
+    const { data }= await res.json()
+    
+    return data ?? []
+  },
   
-  return jsonRes.data || []
+  async getPizzasBySubcategory(subcategory: string): Promise<Product[]> {
+    const res = await fetch(`${API_URL}/api/products/category/pizza/${subcategory}`, CACHE_1H)
+    if (!res.ok) throw new Error(`Error al cargar pizzas: ${subcategory}`)
+    const { data } = await res.json()
+    return data ?? []
+  },
+
+  async getBebidas(): Promise<Product[]> {
+    const res = await fetch(`${API_URL}/api/products/category/bebida`, CACHE_1H)
+    if (!res.ok) throw new Error('Error al cargar las bebidas')
+    const { data } = await res.json()
+    return data ?? []
+  },
 }

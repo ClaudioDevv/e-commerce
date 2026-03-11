@@ -2,14 +2,14 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authApi } from '@/app/lib/api/auth'
+import type { User } from '@/app/lib/api/auth'
 
-interface User {
-  id: string
+interface RegisterData {
   email: string
+  password: string
   name: string
   surname: string
   phone: string
-  role: string
 }
 
 interface AuthContextType {
@@ -22,13 +22,6 @@ interface AuthContextType {
   refreshUser: () => Promise<void>
 }
 
-interface RegisterData {
-  email: string
-  password: string
-  name: string
-  surname: string
-  phone: string
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -36,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Verifica si hay una sesión activa al cargar la página
   useEffect(() => {
     checkAuth()
   }, [])
@@ -70,10 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function refreshUser() {
-    await checkAuth()
-  }
-
   return (
     <AuthContext.Provider
       value={{
@@ -83,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        refreshUser,
+        refreshUser: checkAuth,
       }}
     >
       {children}

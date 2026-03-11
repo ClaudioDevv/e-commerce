@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import PizzaCategoriesBar from '@/app/ui/PizzaCategoriesBar'
 import ProductCard from '@/app/ui/ProductCard'
-import { getPizzas } from '@/app/lib/api/products'
+import { productsApi } from '@/app/lib/api/products'
 
 const CATEGORIES = [
     {
@@ -25,7 +25,7 @@ const CATEGORIES = [
   ]
 
 export default async function PizzasPage() {
-  const pizzas = await getPizzas()
+  const pizzas = await productsApi.getPizzas()
 
   return (
     <main className='container mx-auto px-4 py-6'>

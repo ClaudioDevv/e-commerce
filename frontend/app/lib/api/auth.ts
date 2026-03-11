@@ -1,7 +1,16 @@
-import { fetchWithAuth } from './fetchWithAuth'
+import { clientFetch } from './clientFetch'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.API_URL || 'http://localhost:3001'
+// const AUTH_BASE = '/api/auth'
 
+export interface User {
+  id: string
+  email: string
+  name: string
+  surname: string
+  phone: string
+  role: string
+}
 
 interface LoginData {
   email: string,
@@ -24,26 +33,24 @@ interface AuthResponse {
   success: boolean
   message: string
   data: {
-    user: {
-      id: string
-      email: string
-      name: string
-      surname: string
-      phone: string
-      role: string
-    }
-    accessToken: string
+    user: User
   }
 }
+
+interface LogoutResponse {
+  success: boolean,
+  message: string
+}
+
 
 export const authApi = {
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include',
       body: JSON.stringify(data)
     })
 
@@ -55,13 +62,14 @@ export const authApi = {
 
     return result
   },
+
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include',
       body: JSON.stringify(data),
     })
 
@@ -73,24 +81,22 @@ export const authApi = {
 
     return result
   },
+
   async me(): Promise<AuthResponse> {
-    const response = await fetchWithAuth(`${API_URL}/api/auth/me`, {
-      method: 'GET',
+    const response = await fetch(`${API_URL}/api/auth/me`, {
+      credentials: 'include',
     })
 
-    const result = await response.json()
     if (!response.ok) {
-      throw new Error(result.message || 'No autenticado')
+      throw new Error('No autenticado')
     }
 
-    return result
+    return response.json()
   },
-  async updateUser(data: UpdateUserData){
-    const response = await fetchWithAuth(`${API_URL}/api/auth/me`, {
+
+  async updateUser(data: UpdateUserData): Promise<AuthResponse> {
+    const response = await clientFetch(`${API_URL}/api/auth/me`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(data),
     })
 
@@ -102,8 +108,9 @@ export const authApi = {
 
     return result
   },
-  async logout(): Promise<void> {
-    const response = await fetchWithAuth(`${API_URL}/api/auth/logout`, {
+
+  async logout(): Promise<LogoutResponse> {
+    const response = await fetch(`${API_URL}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include'
     })

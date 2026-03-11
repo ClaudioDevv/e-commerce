@@ -1,9 +1,9 @@
 import PizzaCategoriesBar from '@/app/ui/PizzaCategoriesBar';
 import ProductCard from '@/app/ui/ProductCard';
-import { getPizzasBySubcategory } from '@/app/lib/api/products';
+import { productsApi } from '@/app/lib/api/products';
 
 export default async function PizzasGourmetPage() {
-  const pizzas = await getPizzasBySubcategory('gourmet')
+  const pizzas = await productsApi.getPizzasBySubcategory('gourmet')
 
   return (
     <main className='container mx-auto px-4 py-6'>

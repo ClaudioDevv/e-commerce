@@ -1,4 +1,4 @@
-import { getBebidas } from '@/app/lib/api/products'
+import { productsApi } from '@/app/lib/api/products';
 import ProductCard from '@/app/ui/ProductCard'
 
 const CATEGORIES = [
@@ -20,7 +20,7 @@ const CATEGORIES = [
 ]
 
 export default async function BebidasPage() {
-  const bebidas = await getBebidas()
+  const bebidas = await productsApi.getBebidas()
 
   return (
     <main className='container mx-auto px-4 py-6'>
