@@ -23,7 +23,7 @@ export default function PerfilModal({ isOpen, onClose }: PerfilModalProps) {
     router.push('/')
   }
 
-  const isOrdersActive = pathname === '/secure/orderhistory'
+  const isOrdersActive = pathname === '/secure/orders'
   const isProfileActive = pathname === '/secure/myprofile'
 
   return (
@@ -46,7 +46,7 @@ export default function PerfilModal({ isOpen, onClose }: PerfilModalProps) {
           <nav className="flex flex-col divide-y divide-gray-200">
             
             <Link
-              href="/secure/orderhistory"
+              href="/secure/orders"
               onClick={onClose}
               className={`
                 flex items-center gap-3 px-6 py-4 font-medium transition

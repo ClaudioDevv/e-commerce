@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
-    "dev:stripe": "stripe listen --forward-to localhost:3000/api/payments/webhook",
+    "dev:stripe": "stripe listen --forward-to localhost:3001/api/payments/webhook",
     "dev:full": "concurrently \"pnpm run dev\" \"pnpm run dev:stripe\"",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
